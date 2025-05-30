@@ -1,0 +1,13 @@
+services:
+  telegram-bot:
+    build: .
+    container_name: telegram-bot
+    environment:
+      - BOT_TOKEN=token
+      - DEEPSEEK_API_KEY=api_key
+      - MODEL=ergpt
+      - TEMPERATURE=0.7
+      - MAX_TOKENS=2048
+      - DEEPSEEK_ENDPOINT=https://random.ru/asdasda
+    restart: unless-stopped
+
