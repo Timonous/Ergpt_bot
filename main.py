@@ -2,31 +2,25 @@ import asyncio
 import logging
 import sys
 
-from aiogram import Bot, Dispatcher, F
-from aiogram.client.default import DefaultBotProperties
-from aiogram.enums import ChatType, ParseMode
-
-from bot.handlers import handle_deepseek, router
+from aiogram import Bot, Dispatcher
+from db import create_pool
 from settings import config
-
+from bot.handlers import router as deepseek_router
+from bot.auth import router as auth_router, set_db_pool
 
 async def main() -> None:
-    bot = Bot(token=config.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN_V2))
-
+    bot = Bot(token=config.BOT_TOKEN)
     dp = Dispatcher()
-    dp.include_router(router)
 
-    username = (await bot.get_me()).username
+    # Подключение к БД
+    db_pool = await create_pool()
+    set_db_pool(db_pool)
 
-    dp.message.register(
-        handle_deepseek,
-        (F.chat.type == ChatType.PRIVATE)
-        | F.text.contains(username)
-        | (F.reply_to_message & (F.reply_to_message.from_user.username == username))
-    )
+    # Подключение роутеров
+    dp.include_router(auth_router)
+    dp.include_router(deepseek_router)
 
     await dp.start_polling(bot)
-
 
 if __name__ == "__main__":
     try:
