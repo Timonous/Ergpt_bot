@@ -1,14 +1,14 @@
 import asyncio
 import re
-
-from aiogram import Router, Bot
-from aiogram.enums import ChatAction, ParseMode
-from aiogram.filters import CommandStart, Command
+from aiogram import Router, Bot, F
+from aiogram.enums import ChatAction, ParseMode, ChatType
+from aiogram.filters import CommandStart
 from aiogram.types import Message
 from telegramify_markdown import markdownify
 from telegramify_markdown.customize import get_runtime_config
 
 from bot.api.deepseek import call_deepseek_api
+from bot.auth import authorize_user
 
 markdown_symbol = get_runtime_config().markdown_symbol
 markdown_symbol.head_level_1 = ""
@@ -24,11 +24,19 @@ def escape_markdown(text: str) -> str:
 @router.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
     await message.answer(
-        f"👋 Привет, {message.from_user.first_name}! Добро пожаловать в DeepSeek Agent."
-        f" Здесь ты можешь задавать любые вопросы, а я с радостью на них отвечу!"
+        f"👋 Привет, {message.from_user.first_name}! Добро пожаловать в Ergpt bot.\n"
+        f"Задавай вопросы, и я с радостью на них отвечу!"
     )
 
+@router.message(
+    (F.chat.type == ChatType.PRIVATE)
+    | F.text.contains("DeepSeek")  # можно заменить на username, если нужно
+    | (F.reply_to_message & F.reply_to_message.from_user)
+)
 async def handle_deepseek(message: Message, bot: Bot):
+    if not await authorize_user(message):
+        return
+
     chat_id = message.chat.id
     text = message.text.strip()
 
@@ -37,16 +45,15 @@ async def handle_deepseek(message: Message, bot: Bot):
             await bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
             await asyncio.sleep(4)
 
-    task = asyncio.create_task(show_typing())
-
+    typing_task = asyncio.create_task(show_typing())
     try:
-        reply = await call_deepseek_api( text)
+        reply = await call_deepseek_api(text)
     except Exception as e:
         escaped_error = escape_markdown(str(e))
         await message.reply(f"Ошибка при обращении к DeepSeek: {escaped_error}")
         return
     finally:
-        task.cancel()
+        typing_task.cancel()
 
     tg_md = markdownify(reply, max_line_length=None, normalize_whitespace=False)
     await message.reply(tg_md, parse_mode=ParseMode.MARKDOWN_V2)
