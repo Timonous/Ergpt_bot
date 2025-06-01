@@ -15,5 +15,11 @@ class Config:
         self.TEMPERATURE = getenv("TEMPERATURE")
         self.MAX_TOKENS = getenv("MAX_TOKENS")
 
+        self.DB_PASSWORD = getenv("DB_PASSWORD")
+        self.DB_HOST = getenv("DB_HOST")
+        self.DB_PORT = getenv("DB_PORT")
+        self.DB_USER = getenv("DB_USER")
+        self.DB_NAME = getenv("DB_NAME")
+
 
 config = Config()
