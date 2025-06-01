@@ -14,6 +14,7 @@ class Config:
         self.MODEL = getenv("MODEL")
         self.TEMPERATURE = getenv("TEMPERATURE")
         self.MAX_TOKENS = getenv("MAX_TOKENS")
+        self.TOKEN = getenv("TOKEN")
 
 
 config = Config()
