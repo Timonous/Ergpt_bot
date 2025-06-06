@@ -1,3 +1,5 @@
 venv
 .env
 .idea
+id_ed25519.ppk
+bot.log
