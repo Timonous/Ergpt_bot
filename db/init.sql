@@ -1,0 +1,34 @@
+CREATE TABLE Role (
+    Id serial PRIMARY KEY,
+    Description VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE Users (
+    Id serial PRIMARY KEY,
+    PhoneNumber VARCHAR(20),
+    Name VARCHAR(100),
+    Surname VARCHAR(100),
+    CreatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    IsEmployed BOOLEAN NOT NULL,
+    RoleId INT,
+    CONSTRAINT fk_user_role FOREIGN KEY (RoleId) REFERENCES Role(Id)
+);
+
+CREATE TABLE Chats (
+    Id serial PRIMARY KEY,
+    UserId INT NOT NULL,
+    ChatId INT NOT NULL,
+    CreatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_chats_user FOREIGN KEY (UserId) REFERENCES Users(Id)
+);
+
+CREATE TABLE News (
+    Id serial PRIMARY KEY,
+    Header VARCHAR(255) NOT NULL,
+    Text TEXT NOT NULL,
+    CreatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO Role(Description) VALUES('Admin');
+INSERT INTO Role(Description) VALUES('Default');
