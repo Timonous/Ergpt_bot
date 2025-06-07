@@ -59,7 +59,7 @@ async def handle_deepseek(message: Message, bot: Bot):
             if success:
                 reply = await call_deepseek_api(text)
             else:
-                await message.reply("Сервер перегружен. Попробуйте позже.")
+                reply = "Сервер перегружен. Попробуйте позже."
     except Exception as e:
         escaped_error = escape_markdown(str(e))
         await message.reply(f"Ошибка при обращении к DeepSeek: {escaped_error}")
