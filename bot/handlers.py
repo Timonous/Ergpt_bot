@@ -29,7 +29,9 @@ def escape_markdown(text: str) -> str:
     return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
 
 @router.message(CommandStart())
-async def command_start_handler(message: Message) -> None:
+async def command_start_handler(message: Message):
+    if not await authorize_user(message):
+        return
     await bucket.init_bucket()
     await message.answer(
         f"👋 Привет, {message.from_user.first_name}! Добро пожаловать в Ergpt bot.\n"
