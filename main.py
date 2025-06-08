@@ -24,7 +24,14 @@ async def main() -> None:
 
 if __name__ == "__main__":
     try:
-        logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+            handlers=[
+                logging.FileHandler("bot.log", encoding="utf-8"),
+                logging.StreamHandler(sys.stdout)  # Чтобы логи продолжали отображаться в консоли
+            ]
+        )
         asyncio.run(main())
     except KeyboardInterrupt:
         print("Бот отключен пользователем!")
