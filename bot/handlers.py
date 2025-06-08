@@ -6,7 +6,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 from telegramify_markdown import markdownify
 from telegramify_markdown.customize import get_runtime_config
-from redis_bucket import RedisTokenBucket
+from bot.redis_bucket import RedisTokenBucket
 
 from bot.api.deepseek import call_deepseek_api
 from bot.auth import authorize_user
