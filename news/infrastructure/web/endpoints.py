@@ -1,23 +1,16 @@
 from fastapi import APIRouter, Depends
+from news.core.domain.models import News
+from news.core.usecases.news_case import NewsUseCases
+from typing import List
 
-from user_profile.infrastructure.web.dependencies import get_user_repo
-from user_profile.infrastructure.web.schemas import *
-from user_profile.core.interfaces.user_repository import UserRepository
+from news.infrastructure.di import get_news_use_cases
 
 router = APIRouter(prefix="/webview")
 
-@router.get("/news", response_model=UserProfileResponse)
-async def get_profile(
-    telegram_id: str,
-    user_repo: UserRepository = Depends(get_user_repo)
+@router.get("/news", response_model=List[News])
+async def get_news_with_authors(
+    limit: int = 10,
+    offset: int = 0,
+    use_case: NewsUseCases = Depends(get_news_use_cases)
 ):
-    user = await user_repo.get_by_telegram_id(telegram_id)
-    return {
-        "name": user.staff.name,
-        "surname": user.staff.surname,
-        "patronymic": user.staff.patronymic,
-        "phone": user.phone,
-        "vacancy": user.staff.vacancy,
-        "email": user.staff.email,
-        "telegram_id": user.telegram_id
-    }
+    return await use_case.get_news_with_authors(limit, offset)

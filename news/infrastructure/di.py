@@ -1,5 +1,8 @@
-
-from infrastructure.db.repositories import (
+from asyncpg import Pool
+from fastapi import APIRouter, Depends
+from news.core.interfaces.news_repository import NewsRepository
+from news.core.usecases.news_case import NewsUseCases
+from news.infrastructure.db.news_repository_impl import (
     PostgreSQLNewsRepository,
     PostgreSQLStaffRepository,
     PostgreSQLUserRepository
