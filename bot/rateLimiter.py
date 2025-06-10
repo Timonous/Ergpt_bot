@@ -1,7 +1,7 @@
 import time
 import redis.asyncio as redis
 
-class RateLimiter:
+class rateLimiter:
     def __init__(self, max_requests: int, window: int, redis_url: str, max_global: int = 10):
         self.max_requests = max_requests
         self.window = window

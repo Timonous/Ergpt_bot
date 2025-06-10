@@ -10,6 +10,9 @@ def set_db_pool(pool: Pool):
     global db_pool
     db_pool = pool
 
+def get_db_pool():
+    return db_pool
+
 def normalize_phone_number(raw_phone: str) -> str:
     # Удаляем все лишние символы
     digits = re.sub(r'\D', '', raw_phone)
@@ -34,14 +37,57 @@ def normalize_phone_number(raw_phone: str) -> str:
     else:
         return '+' + digits  # на всякий случай
 
-async def is_user_registered(telegram_id: int) -> bool:
+async def get_auth_user_by_telegramid(telegram_id: int):
     async with db_pool.acquire() as conn:
         user = await conn.fetchrow("SELECT * FROM users WHERE telegramid = $1", str(telegram_id))
-        return user is not None
+        return user
+
+async def daily_staff_status_check():
+    """
+    Деактивирует пользователей, которые больше не работают в компании.
+    Возвращает количество деактивированных пользователей.
+    """
+    async with db_pool.acquire() as conn:
+        # Получаем всех активных пользователей
+        users = await conn.fetch("SELECT * FROM users WHERE isactive = TRUE")
+
+        for user in users:
+            phone = user['phone']
+            # Проверяем сотрудника в таблице staff
+            staff = await conn.fetchrow("SELECT isemployed FROM staff WHERE phone = $1", phone)
+
+            # Если сотрудник не найден или уволен - деактивируем
+            if not staff or not staff['isemployed']:
+                await conn.execute("UPDATE users SET isactive = FALSE WHERE telegramid = $1", user['telegramid'])
+                print(f"Пользователь c telegramid:({user['telegramid']}) был деактивирован")
+
+
+async def check_staff_authorization(phone: str):
+    """
+    Проверяет наличие телефона в таблице staff и статус isemployed.
+    Возвращает (True, staff_id) при успехе или (False, причина).
+    """
+    normalized_phone = normalize_phone_number(phone)
+    async with db_pool.acquire() as conn:
+        staff = await conn.fetchrow("SELECT * FROM staff WHERE phone = $1", normalized_phone)
+        if not staff:
+            return False, "😴 Извините, вы не являетесь сотрудником ЭР-Телеком"
+        if staff.get("isemployed") is False:
+            return False, "😴 К сожалению, вы больше не являетесь сотрудником ЭР-Телеком"
+        return True, staff.get("id")
 
 async def authorize_user(message: Message) -> bool:
-    if await is_user_registered(message.chat.id):
+    auth_user = await get_auth_user_by_telegramid(message.chat.id)
+    if auth_user is not None:
+        if not auth_user.get("isactive"):
+            await message.answer(
+                f"😴 Похоже вы больше не являетесь сотрудником ЭР-Телеком.\n\n"
+                "❗️ Если произошла ошибка, обратитесь в тех поддержку.",
+                reply_markup=ReplyKeyboardRemove()
+            )
+            return False
         return True
+
     keyboard = ReplyKeyboardMarkup(
         keyboard=[[KeyboardButton(text="📱 Отправить номер", request_contact=True)]],
         resize_keyboard=True
@@ -57,28 +103,33 @@ async def authorize_user(message: Message) -> bool:
 @router.message(F.contact)
 async def handle_contact(message: Message):
     contact = message.contact
-    raw_phone = contact.phone_number
-    phone = normalize_phone_number(raw_phone)  # Нормализуем
+    phone = contact.phone_number
 
-    async with db_pool.acquire() as conn:
-        # Поиск в таблице staff по номеру и проверка isemployed
-        staff = await conn.fetchrow("SELECT * FROM staff WHERE phone = $1", phone)
-        if not staff:
-            await message.answer(
-                "😴 Извините, вы не являетесь сотрудником ЭР-Телеком",
-                reply_markup=ReplyKeyboardRemove()
-            )
-            return
-        if staff.get("isemployed") is False:
-            await message.answer(
-                "😴 К сожалению, вы больше не работаете в ЭР-Телеком",
-                reply_markup=ReplyKeyboardRemove()
-            )
-            return
+    # Проверяем авторизацию по номеру
+    authorized, result = await check_staff_authorization(phone)
+
+    if not authorized:
+        await message.answer(result, reply_markup=ReplyKeyboardRemove())
+        return
+
+    staff_id = result
+
+    if await get_auth_user_by_telegramid(message.chat.id) is None:
         # Регистрируем пользователя
-        await conn.execute("INSERT INTO users (telegramid, phone, staffid) VALUES ($1, $2, $3)", str(message.chat.id), phone, staff.get("id"))
-    await message.answer(
-        f"✅ Спасибо! Вы успешно зарегистрированы.\n"
+        async with db_pool.acquire() as conn:
+            await conn.execute(
+                "INSERT INTO users (telegramid, phone, staffid) VALUES ($1, $2, $3)",
+                str(message.chat.id), phone, staff_id
+            )
+        await message.answer(
+            "✅ Спасибо! Регистрация прошла успешно.\n"
             "Задавай вопросы, и я с радостью на них отвечу!",
             reply_markup=ReplyKeyboardRemove()
         )
+        return
+
+    await message.answer(
+        "Ты уже зарегистрирован👌\n"
+        "Задавай вопросы, и я с радостью на них отвечу!",
+        reply_markup=ReplyKeyboardRemove()
+    )

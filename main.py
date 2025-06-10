@@ -1,24 +1,33 @@
 import asyncio
 import logging
 import sys
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 from aiogram import Bot, Dispatcher
 from db import create_pool
 from settings import config
 from bot.handlers import router as deepseek_router
-from bot.auth import router as auth_router, set_db_pool
+from bot.auth import router as auth_router, set_db_pool, daily_staff_status_check
+
+
 
 async def main() -> None:
-    bot = Bot(token=config.BOT_TOKEN)
-    dp = Dispatcher()
-
     # Подключение к БД
     db_pool = await create_pool()
     set_db_pool(db_pool)
 
+    bot = Bot(token=config.BOT_TOKEN)
+    dp = Dispatcher()
+
     # Подключение роутеров
     dp.include_router(auth_router)
     dp.include_router(deepseek_router)
+
+    #Настройка автозапуска функции
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(daily_staff_status_check, CronTrigger(hour=00, minute=00))
+    scheduler.start()
 
     await dp.start_polling(bot)
 
