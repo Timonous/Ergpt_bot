@@ -118,7 +118,7 @@ async def regenerate_ergpt_response(chat_id: int, api_token: str) -> Optional[st
         logging.error(f"Error: {e}")
     return None
 
-async def delete_ergpt_chat(chat_id: int, api_token: str) -> Optional[bool]:
+async def delete_ergpt_chat(chat_id: int) -> Optional[bool]:
     api_url = f"https://er-gpt.ru/api/v2/chat/{chat_id}"
     headers = {
         "Authorization": f"Bearer {api_token}",
