@@ -3,14 +3,15 @@ from bot.auth import get_db_pool
 
 async def ensure_user_exists(user_id: int):
     db_pool = get_db_pool()
+    chat_id = 1 # заглушка для корректности
     async with db_pool.acquire() as conn:
         await conn.execute(
             """
-            INSERT INTO users (userid)
-            VALUES ($1)
+            INSERT INTO chats_ergpt (userid, chatid, createdat, updatedat, isdeleted)
+            VALUES ($1, $2, NOW(), NOW(), FALSE)
             ON CONFLICT (userid) DO NOTHING
             """,
-            user_id
+            user_id, chat_id
         )
 
 async def get_chat_for_user(user_id: int):
@@ -27,9 +28,12 @@ async def set_chat_for_user(user_id: int, chat_id: int):
     async with db_pool.acquire() as conn:
         await conn.execute(
             """
-            INSERT INTO chats_ergpt (userid, chatid, createdat, updatedat)
-            VALUES ($1, $2, NOW(), NOW())
-            ON CONFLICT (userid) DO NOTHING
+            INSERT INTO chats_ergpt (userid, chatid, createdat, updatedat, isdeleted)
+            VALUES ($1, $2, NOW(), NOW(), FALSE)
+            ON CONFLICT (userid) DO UPDATE
+            SET chatid = EXCLUDED.chatid,
+                updatedat = NOW(),
+                isdeleted = FALSE
             """,
             user_id, chat_id
         )
@@ -59,3 +63,24 @@ async def get_userid_by_tguser(tguser_id: str):
             tguser_id
         )
         return row['id'] if row else None
+
+async def ensure_chat_deleted(user_id: int) -> bool:
+    db_pool = get_db_pool()
+    async with db_pool.acquire() as conn:
+        result = await conn.fetchval(
+            """
+            SELECT isdeleted FROM chats_ergpt WHERE userid = $1
+            """,
+            user_id
+        )
+        return result
+
+async def set_chat_deleted(user_id: int):
+    db_pool = get_db_pool()
+    async with db_pool.acquire() as conn:
+        await conn.execute(
+            """
+            UPDATE chats_ergpt SET isdeleted = TRUE WHERE userid = $1
+            """,
+            user_id
+        )

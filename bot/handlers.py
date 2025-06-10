@@ -15,7 +15,7 @@ from bot.api.deepseek import call_deepseek_api
 from bot.api.ergpt import send_ergpt_message, create_ergpt_chat, delete_ergpt_chat
 from bot.auth import authorize_user
 from bot.repository.chatRepository import get_chat_for_user, set_chat_for_user, get_updateat_for_user, \
-    set_updateat_for_chat, ensure_user_exists, get_userid_by_tguser
+    set_updateat_for_chat, ensure_user_exists, get_userid_by_tguser, ensure_chat_deleted, set_chat_deleted
 
 markdown_symbol = get_runtime_config().markdown_symbol
 markdown_symbol.head_level_1 = ""
@@ -81,13 +81,13 @@ async def command_restart_handler(message: Message) -> None:
     ergpt_chat_id = await get_chat_for_user(user_id)
     if ergpt_chat_id is not None:
         await delete_ergpt_chat(ergpt_chat_id)
+        await set_chat_deleted(user_id)
     text = (
         "😉Хорошо, начнем все с чистого листа\n"
         "Задавай вопрос, я с радостью на него отвечу!"
     )
 
     await message.answer(text)
-
 # @router.message(
 #     (F.chat.type == ChatType.PRIVATE)
 #     | F.text.contains("DeepSeek")  # можно заменить на username, если нужно
@@ -128,6 +128,7 @@ async def command_restart_handler(message: Message) -> None:
 #     tg_md = markdownify(reply, max_line_length=None, normalize_whitespace=False)
 #     await message.reply(tg_md, parse_mode=ParseMode.MARKDOWN_V2)
 
+
 @router.message(
     (F.chat.type == ChatType.PRIVATE)
     | F.text.contains("ergpt")  # можно заменить на username, если нужно
@@ -157,13 +158,14 @@ async def handle_ergpt(message: Message, bot: Bot):
     typing_task = asyncio.create_task(show_typing())
 
     user_id = await get_user(str(tguser_id)) # находим id нашего юзероа по тг id
-    # await check_user(user_id) # проверяем, что пользователь есть в базе данных чатов
+    await check_user(user_id) # проверяем, что пользователь есть в базе данных чатов
     ergpt_chat_id = await get_chat_for_user(user_id) # ищем чат для юзера
     if ergpt_chat_id == 1: # если у пользователя ещё не было чата, создаем его
         ergpt_chat_id = await create_ergpt_chat_for_user(user_id)
     else:
         updated_at = await get_updatedat(user_id)
-        if updated_at is not None and datetime.now(timezone.utc) > updated_at + timedelta(hours=5): # если чат был удален, создаем новый
+        if updated_at is not None and await is_deleted_chat_by_user(user_id): # если чат был удален, создаем новый
+            await delete_ergpt_chat(ergpt_chat_id) # удаляем старый чат
             ergpt_chat_id = await create_ergpt_chat_for_user(user_id)
         else: #иначе просто обновляем время последенго обращения
             await set_updatedat(user_id)
@@ -171,7 +173,7 @@ async def handle_ergpt(message: Message, bot: Bot):
         reply = await send_ergpt_message(chat_id = ergpt_chat_id, msg = text)
     except Exception as e:
         escaped_error = escape_markdown(str(e))
-        await message.reply(f"Ошибка при обращении к Ergpt: {escaped_error}")
+        await message.reply(f"Ошибка при обращении к ergpt: {escaped_error}")
         return
     finally:
         typing_task.cancel()
@@ -198,5 +200,8 @@ async def get_user(tguser_id):
 async def check_user(user_id):
     await ensure_user_exists(user_id)
     return True
-async def is_active_chat_by_user(user_id: int):
-    return True
+async def is_deleted_chat_by_user(user_id: int):
+    return await ensure_chat_deleted(user_id)
+
+async def delete_chat(user_id: int):
+    await set_chat_deleted(user_id)
