@@ -79,14 +79,15 @@ async def command_restart_handler(message: Message) -> None:
         return
     user_id = await get_user(str(message.chat.id))
     ergpt_chat_id = await get_chat_for_user(user_id)
+    text = "😴Упс, Что-то пошло не так...\nПопробуйте позже."
     if ergpt_chat_id is not None:
-        await delete_ergpt_chat(ergpt_chat_id)
-        await set_chat_deleted(user_id)
-    text = (
-        "😉Хорошо, начнем все с чистого листа\n"
-        "Задавай вопрос, я с радостью на него отвечу!"
-    )
-
+        response = await delete_ergpt_chat(ergpt_chat_id)
+        if response is not None:
+            await set_chat_deleted(user_id)
+            text = (
+                "😉Хорошо, начнем все с чистого листа\n"
+                "Задавай вопрос, я с радостью на него отвечу!"
+            )
     await message.answer(text)
 # @router.message(
 #     (F.chat.type == ChatType.PRIVATE)
