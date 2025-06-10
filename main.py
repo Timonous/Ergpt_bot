@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import sys
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 from aiogram import Bot, Dispatcher
 from db import create_pool
@@ -8,7 +10,17 @@ from settings import config
 from bot.handlers import router as deepseek_router
 from bot.auth import router as auth_router, set_db_pool
 
+
+
+async def daily_task():
+    print("Выполняется ежедневная задача!")
+
 async def main() -> None:
+    #Настройка автозапуска функции
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(daily_task, CronTrigger(minute=10))
+    scheduler.start()
+
     bot = Bot(token=config.BOT_TOKEN)
     dp = Dispatcher()
 
