@@ -5,14 +5,14 @@ from asyncpg import Pool
 
 from aiogram import Router, Bot, F
 from aiogram.enums import ChatAction, ParseMode, ChatType
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 from telegramify_markdown import markdownify
 from telegramify_markdown.customize import get_runtime_config
 
 from bot.rateLimiter import rateLimiter
 from bot.api.deepseek import call_deepseek_api
-from bot.api.ergpt import send_ergpt_message, create_ergpt_chat
+from bot.api.ergpt import send_ergpt_message, create_ergpt_chat, delete_ergpt_chat
 from bot.auth import authorize_user
 from bot.repository.chatRepository import get_chat_for_user, set_chat_for_user, get_updateat_for_user, \
     set_updateat_for_chat, ensure_user_exists, get_userid_by_tguser
@@ -42,6 +42,51 @@ async def command_start_handler(message: Message) -> None:
         f"👋 Привет, {message.from_user.first_name}! Добро пожаловать в Ergpt bot.\n"
         f"Задавай вопросы, и я с радостью на них отвечу!"
     )
+
+@router.message(Command("help"))
+async def command_help_handler(message: Message) -> None:
+    if not await authorize_user(message):
+        return
+    help_text = (
+        "ℹ️ *Справка по боту Ergpt*\n\n"
+        "Доступные команды:\n"
+        "/restart - Перезапуск чата\n"
+        "/support - Контакты тех. поддержки\n"
+        "/change - Выбрать модель\n"
+        "/addChat - Добавить ergpt в беседу\n\n"
+        "Вы можете выбрать получение ответов от deepseek, но со следующими ограничениями:\n"
+        "* История чата не сохраняется\n"
+        "* Добавить в беседу модель нельзя\n"
+        "* Отсутствует возможность работы с файлами\n"
+    )
+    await message.answer(help_text)
+
+@router.message(Command("support"))
+async def command_support_handler(message: Message) -> None:
+    await message.answer("Тут будут контакты тех. поддержки...")
+
+@router.message(Command("addChat"))
+async def command_support_handler(message: Message) -> None:
+    await message.answer("Тут будет логика добавления в груповые чаты...")
+
+@router.message(Command("change"))
+async def command_support_handler(message: Message) -> None:
+    await message.answer("Тут будет логика смены модели...")
+
+@router.message(Command("restart"))
+async def command_restart_handler(message: Message) -> None:
+    if not await authorize_user(message):
+        return
+    user_id = await get_user(str(message.chat.id))
+    ergpt_chat_id = await get_chat_for_user(user_id)
+    if ergpt_chat_id is not None:
+        await delete_ergpt_chat(ergpt_chat_id)
+    text = (
+        "😉Хорошо, начнем все с чистого листа\n"
+        "Задавай вопрос, я с радостью на него отвечу!"
+    )
+
+    await message.answer(text)
 
 # @router.message(
 #     (F.chat.type == ChatType.PRIVATE)
@@ -126,7 +171,7 @@ async def handle_ergpt(message: Message, bot: Bot):
         reply = await send_ergpt_message(chat_id = ergpt_chat_id, msg = text)
     except Exception as e:
         escaped_error = escape_markdown(str(e))
-        await message.reply(f"Ошибка при обращении к DeepSeek: {escaped_error}")
+        await message.reply(f"Ошибка при обращении к Ergpt: {escaped_error}")
         return
     finally:
         typing_task.cancel()
