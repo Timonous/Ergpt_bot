@@ -33,6 +33,8 @@ def escape_markdown(text: str) -> str:
 
 @router.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
+    if not await authorize_user(message):
+        return
     await message.answer(
         f"👋 Привет, {message.from_user.first_name}! Добро пожаловать в Ergpt bot.\n"
         f"Задавай вопросы, и я с радостью на них отвечу!"
@@ -83,6 +85,8 @@ async def command_start_handler(message: Message) -> None:
 )
 async def handle_ergpt(message: Message, bot: Bot):
     user_id = message.from_user.id
+    if not await authorize_user(message):
+        return
 
     allowed = await limiter.is_allowed(user_id)
     if not allowed:
