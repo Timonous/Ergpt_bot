@@ -65,7 +65,7 @@ async def command_help_handler(message: Message) -> None:
 async def command_support_handler(message: Message) -> None:
     await message.answer("Тут будут контакты тех. поддержки...")
 
-@router.message(Command("addChat"))
+@router.message(Command("add"))
 async def command_support_handler(message: Message) -> None:
     await message.answer("Тут будет логика добавления в груповые чаты...")
 
