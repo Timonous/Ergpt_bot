@@ -6,42 +6,32 @@ import (
 	"github.com/Timonous/Ergpt_bot/webview/internal/entity"
 	"github.com/labstack/echo/v4"
 	"net/http"
-	"strconv"
 	"time"
 )
 
 type IStatisticsService interface {
-	GetBotStatistics(ctx context.Context, startDate, endDate time.Time)
+	GetBotStatistics(ctx context.Context, startDate, endDate time.Time) ([]entity.LogsCountByDay, int, error)
 }
 
 func (r *containerRoutes) GetStatisticsGraphic(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	limitStr := c.QueryParam("limit")
-	offsetStr := c.QueryParam("offset")
+	u := new(entity.GetStatisticsRequest)
+	if err := c.Bind(u); err != nil {
+		errorResponse(c, http.StatusBadRequest, "bad request")
 
-	// преобразуем limit и offset в числа
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit < 1 {
-		limit = 10 // значение по умолчанию
+		return fmt.Errorf("failed to get request bory: %w", err)
 	}
 
-	offset, err := strconv.Atoi(offsetStr)
-	if err != nil || offset < 0 {
-		offset = 0 // значение по умолчанию
-	}
-
-	news, err := r.n.GetNews(ctx, limit, offset)
+	statistics, uniqurUsers, err := r.s.GetBotStatistics(ctx, u.StartDate, u.EndDate)
 	if err != nil {
-		errorResponse(c, http.StatusInternalServerError, "internal server error")
+		errorResponse(c, http.StatusInternalServerError, "internal error")
 
-		return fmt.Errorf("failed to get news: %w", err)
+		return fmt.Errorf("failed to get statistics: %w", err)
 	}
 
-	return c.JSON(http.StatusOK, entity.PaginatedResponse{
-		Items:  news,
-		Total:  limit + offset,
-		Limit:  limit,
-		Offset: offset,
+	return c.JSON(http.StatusOK, entity.GetStatisticsResponse{
+		GraphInfo:          statistics,
+		UniqueUserInPeriod: uniqurUsers,
 	})
 }

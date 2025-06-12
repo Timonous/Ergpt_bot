@@ -9,7 +9,7 @@ import (
 )
 
 type ILogsRepository interface {
-	GetLogsByDateRange(ctx context.Context, startDate, endDate time.Time) ([]entity.LogWithCommand, error)
+	GetLogsCountByDay(ctx context.Context, startDate, endDate time.Time) ([]entity.LogsCountByDay, error)
 	GetNumUsersByPeriod(ctx context.Context, startDate, endDate time.Time) (int, error)
 }
 
@@ -22,12 +22,12 @@ func NewStatisticsService(logsRepo ILogsRepository) *StatisticsService {
 	return &StatisticsService{logsRepo: logsRepo}
 }
 
-func (s *StatisticsService) GetBotStatistics(ctx context.Context, startDate, endDate time.Time) ([]entity.LogWithCommand, int, error) {
+func (s *StatisticsService) GetBotStatistics(ctx context.Context, startDate, endDate time.Time) ([]entity.LogsCountByDay, int, error) {
 	if startDate.Compare(endDate) != -1 {
 		return nil, 0, errors.New("start date must be before end date")
 	}
 
-	dateRange, err := s.logsRepo.GetLogsByDateRange(ctx, startDate, endDate)
+	dateRange, err := s.logsRepo.GetLogsCountByDay(ctx, startDate, endDate)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get logs by date range: %w", err)
 	}
