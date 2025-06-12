@@ -7,9 +7,9 @@ async def ensure_user_exists(user_id: int):
     async with db_pool.acquire() as conn:
         await conn.execute(
             """
-            INSERT INTO chats_ergpt (userid, chatid, createdat, updatedat, isdeleted)
+            INSERT INTO chats_ergpt (user_id, chat_id, created_at, updated_at, is_deleted)
             VALUES ($1, $2, NOW(), NOW(), FALSE)
-            ON CONFLICT (userid) DO NOTHING
+            ON CONFLICT (user_id) DO NOTHING
             """,
             user_id, chat_id
         )
@@ -18,22 +18,22 @@ async def get_chat_for_user(user_id: int):
     db_pool = get_db_pool()
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT chatid FROM chats_ergpt WHERE userid = $1",
+            "SELECT chat_id FROM chats_ergpt WHERE user_id = $1",
             user_id
         )
-        return row['chatid'] if row else 1  # если чата нет, вернуть 1 как сигнал для создания
+        return row['chat_id'] if row else 1  # если чата нет, вернуть 1 как сигнал для создания
 
 async def set_chat_for_user(user_id: int, chat_id: int):
     db_pool = get_db_pool()
     async with db_pool.acquire() as conn:
         await conn.execute(
             """
-            INSERT INTO chats_ergpt (userid, chatid, createdat, updatedat, isdeleted)
+            INSERT INTO chats_ergpt (user_id, chat_id, created_at, updated_at, is_deleted)
             VALUES ($1, $2, NOW(), NOW(), FALSE)
-            ON CONFLICT (userid) DO UPDATE
-            SET chatid = EXCLUDED.chatid,
-                updatedat = NOW(),
-                isdeleted = FALSE
+            ON CONFLICT (user_id) DO UPDATE
+            SET chat_id = EXCLUDED.chat_id,
+                updated_at = NOW(),
+                is_deleted = FALSE
             """,
             user_id, chat_id
         )
@@ -42,16 +42,16 @@ async def get_updateat_for_user(user_id: int):
     db_pool = get_db_pool()
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT updatedat FROM chats_ergpt WHERE userid = $1",
+            "SELECT updated_at FROM chats_ergpt WHERE user_id = $1",
             user_id
         )
-        return row['updatedat'] if row else None
+        return row['updated_at'] if row else None
 
 async def set_updateat_for_chat(user_id: int):
     db_pool = get_db_pool()
     async with db_pool.acquire() as conn:
         await conn.execute(
-            "UPDATE chats_ergpt SET updatedat = NOW() WHERE userid = $1",
+            "UPDATE chats_ergpt SET updated_at = NOW() WHERE user_id = $1",
             user_id
         )
 
@@ -59,7 +59,7 @@ async def get_userid_by_tguser(tguser_id: str):
     db_pool = get_db_pool()
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT id FROM users WHERE telegramid = $1",
+            "SELECT id FROM users WHERE telegram_id = $1",
             tguser_id
         )
         return row['id'] if row else None
@@ -69,7 +69,7 @@ async def ensure_chat_deleted(user_id: int) -> bool:
     async with db_pool.acquire() as conn:
         result = await conn.fetchval(
             """
-            SELECT isdeleted FROM chats_ergpt WHERE userid = $1
+            SELECT is_deleted FROM chats_ergpt WHERE user_id = $1
             """,
             user_id
         )
@@ -80,7 +80,7 @@ async def set_chat_deleted(user_id: int):
     async with db_pool.acquire() as conn:
         await conn.execute(
             """
-            UPDATE chats_ergpt SET isdeleted = TRUE WHERE userid = $1
+            UPDATE chats_ergpt SET is_deleted = TRUE WHERE user_id = $1
             """,
             user_id
         )
