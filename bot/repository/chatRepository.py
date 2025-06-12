@@ -84,3 +84,17 @@ async def set_chat_deleted(user_id: int):
             """,
             user_id
         )
+
+async def get_outdated_chats():
+    db_pool = get_db_pool()
+    async with db_pool.acquire() as conn:
+        result = await conn.fetch(
+            """
+            SELECT user_id, chat_id
+            FROM chats_ergpt
+            WHERE
+                is_deleted = false
+                AND updated_at < NOW() - INTERVAL '24 hours'
+            """
+        )
+        return result
