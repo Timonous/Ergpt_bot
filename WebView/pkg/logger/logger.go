@@ -8,7 +8,7 @@ import (
 const (
 	LoggerKey   = "logger"
 	RequestID   = "requestID"
-	ServiceName = "article_service"
+	ServiceName = "erGPT_service"
 )
 
 type logger struct {

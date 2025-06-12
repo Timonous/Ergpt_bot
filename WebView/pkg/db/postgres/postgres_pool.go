@@ -16,11 +16,11 @@ const (
 )
 
 type DBConfig struct {
-	UserName string `env:"POSTGRES_USER" env-default:"root"`
-	Password string `env:"POSTGRES_PASSWORD" env-default:"123"`
-	Host     string `env:"POSTGRES_HOST" env-default:"localhost"`
-	Port     string `env:"POSTGRES_PORT" env-default:"5432"`
-	DbName   string `env:"POSTGRES_DB" env-default:"containers_service"`
+	UserName string `env:"DB_USER" env-default:"root"`
+	Password string `env:"DB_PASSWORD" env-default:"123"`
+	Host     string `env:"DB_HOST" env-default:"localhost"`
+	Port     string `env:"DB_PORT" env-default:"5432"`
+	DbName   string `env:"DB_NAME" env-default:"containers_service"`
 	PoolMax  int    `env:"PG_POOL_MAX" env-default:"5" env-required:"true" yaml:"pool_max"`
 }
 
