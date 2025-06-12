@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func NewRouter(handler *echo.Echo, l logger.Logger, t IUsersService) {
+func NewRouter(handler *echo.Echo, l logger.Logger, t IUsersService, n INewsService) {
 	// Middleware
 	handler.Use(middleware.Logger())
 	handler.Use(middleware.Recover())
@@ -24,6 +24,6 @@ func NewRouter(handler *echo.Echo, l logger.Logger, t IUsersService) {
 
 	h := handler.Group("/api/v1")
 	{
-		newUserRoutes(h, t, l)
+		newUserRoutes(h, t, n, l)
 	}
 }

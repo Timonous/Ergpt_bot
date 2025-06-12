@@ -7,6 +7,7 @@ import (
 
 type IUsersRepository interface {
 	GetUserByTelegramID(ctx context.Context, telegramID string) (*entity.User, error)
+	GetUserByUserID(ctx context.Context, userID int) (entity.User, error)
 }
 
 type UserService struct {

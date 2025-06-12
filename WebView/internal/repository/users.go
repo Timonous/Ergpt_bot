@@ -19,8 +19,6 @@ func NewUserRepository(pg *postgres.Postgres) *UserRepository {
 }
 
 func (u *UserRepository) GetUserByTelegramID(ctx context.Context, telegramID string) (*entity.User, error) {
-	fmt.Println("GetUserByTelegramID", telegramID)
-
 	query, args, err := u.Builder.Select(
 		"u.ID",
 		"u.phone",
@@ -67,4 +65,52 @@ func (u *UserRepository) GetUserByTelegramID(ctx context.Context, telegramID str
 	}
 
 	return &user, nil
+}
+
+func (u *UserRepository) GetUserByUserID(ctx context.Context, userID int) (entity.User, error) {
+	query, args, err := u.Builder.Select(
+		"u.ID",
+		"u.phone",
+		"u.telegram_id",
+		"u.role_id",
+		"u.is_active",
+		"s.name",
+		"s.surname",
+		"s.patronymic",
+		"s.is_employed",
+		"s.vacancy",
+		"s.email",
+	).
+		From("users u").
+		Join("staff s ON u.staff_id = s.id").
+		Where(sq.Eq{"u.id": userID}).
+		ToSql()
+	if err != nil {
+		return entity.User{}, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	var user entity.User
+	err = u.Pool.QueryRow(context.Background(), query, args...).Scan(
+		&user.ID,
+		&user.Phone,
+		&user.TelegramID,
+		&user.RoleID,
+		&user.IsActive,
+		&user.Name,
+		&user.Surname,
+		&user.Patronymic,
+		&user.IsEmployed,
+		&user.Vacancy,
+		&user.Email,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return entity.User{}, fmt.Errorf("user not found")
+		}
+
+		return entity.User{}, fmt.Errorf("failed to query user: %w", err)
+	}
+
+	return user, nil
 }

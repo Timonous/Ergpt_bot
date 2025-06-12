@@ -16,14 +16,18 @@ type IUsersService interface {
 
 type containerRoutes struct {
 	t IUsersService
+	n INewsService
 	l logger.Logger
 }
 
-func newUserRoutes(handler *echo.Group, t IUsersService, l logger.Logger) {
-	r := &containerRoutes{t, l}
+func newUserRoutes(handler *echo.Group, t IUsersService, n INewsService, l logger.Logger) {
+	r := &containerRoutes{t, n, l}
 
 	// GET /api/v1/users/{telegramID}
 	handler.GET("/users/:telegram_id", r.GetUser)
+
+	// GET /api/v1/articles?limit=5&offset=0
+	handler.GET("/news", r.GetNews)
 }
 
 func (r *containerRoutes) GetUser(c echo.Context) error {
