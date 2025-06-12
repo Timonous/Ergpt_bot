@@ -6,7 +6,7 @@ from asyncpg import Pool
 from aiogram import Router, Bot, F
 from aiogram.enums import ChatAction, ParseMode, ChatType
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message
+from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, ChatMemberUpdated
 from telegramify_markdown import markdownify
 from telegramify_markdown.customize import get_runtime_config
 
@@ -36,14 +36,14 @@ def escape_markdown(text: str) -> str:
     escape_chars = r'\_*[]()~`>#+-=|{}.!'
     return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
 
-@router.message(CommandStart())
+@router.message(CommandStart(), F.chat.type == ChatType.PRIVATE)
 async def command_start_handler(message: Message) -> None:
     await message.answer(
         f"👋 Привет, {message.from_user.first_name}! Добро пожаловать в Ergpt bot.\n"
         f"Задавай вопросы, и я с радостью на них отвечу!"
     )
 
-@router.message(Command("help"))
+@router.message(Command("help"), F.chat.type == ChatType.PRIVATE)
 async def command_help_handler(message: Message) -> None:
     if not await authorize_user(message):
         return
@@ -63,17 +63,31 @@ async def command_help_handler(message: Message) -> None:
 
 @router.message(Command("support"))
 async def command_support_handler(message: Message) -> None:
+    if not await authorize_user(message):
+        return
     await message.answer("Тут будут контакты тех. поддержки...")
 
-@router.message(Command("add"))
-async def command_support_handler(message: Message) -> None:
-    await message.answer("Тут будет логика добавления в груповые чаты...")
+@router.message(Command("add"), F.chat.type == ChatType.PRIVATE)
+async def command_add_handler(message: Message) -> None:
+    if not await authorize_user(message):
+        return
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(
+                text="😇 Добавьте меня в групповой чат — я очень полезный!",
+                url="https://t.me/Ergpt_test_bot?startgroup=start"
+            )]
+        ]
+    )
+    await message.answer("Добавить в групповой чат 👇", reply_markup=keyboard)
 
-@router.message(Command("change"))
-async def command_support_handler(message: Message) -> None:
+@router.message(Command("change"), F.chat.type == ChatType.PRIVATE)
+async def command_change_handler(message: Message) -> None:
+    if not await authorize_user(message):
+        return
     await message.answer("Тут будет логика смены модели...")
 
-@router.message(Command("restart"))
+@router.message(Command("restart"), F.chat.type == ChatType.PRIVATE)
 async def command_restart_handler(message: Message) -> None:
     if not await authorize_user(message):
         return
@@ -172,6 +186,9 @@ async def handle_ergpt(message: Message, bot: Bot):
             await set_updatedat(user_id)
     try:
         reply = await send_ergpt_message(chat_id = ergpt_chat_id, msg = text)
+        if reply is None:
+            await message.reply("😴Упс, Что-то пошло не так...\nПопробуйте позже.")
+            return
     except Exception as e:
         escaped_error = escape_markdown(str(e))
         await message.reply(f"Ошибка при обращении к ergpt: {escaped_error}")
