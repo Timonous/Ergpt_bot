@@ -63,8 +63,6 @@ async def command_help_handler(message: Message) -> None:
 
 @router.message(Command("support"))
 async def command_support_handler(message: Message) -> None:
-    if not await authorize_user(message):
-        return
     await message.answer("Тут будут контакты тех. поддержки...")
 
 @router.message(Command("add"), F.chat.type == ChatType.PRIVATE)
