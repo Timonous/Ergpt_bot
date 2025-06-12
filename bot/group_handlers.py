@@ -38,7 +38,7 @@ async def group_restart_handler(message: Message) -> None:
     (
         F.chat.type.in_({ChatType.GROUP, ChatType.SUPERGROUP})
         & (~F.is_topic_message)
-        & (F.text.contains("Ergpt") | F.text.contains("Эргпт") | (F.reply_to_message.from_user.id))
+        & (F.text.contains("Ergpt") | F.text.contains("Эргпт") | F.text.contains("ergpt") | F.text.contains("эргпт") | F.reply_to_message.from_user.id)
     )
 )
 async def group_handle_ergpt(message: Message, bot: Bot):
