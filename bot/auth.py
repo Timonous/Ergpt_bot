@@ -1,3 +1,5 @@
+import logging
+
 from aiogram import Router, F
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from asyncpg import Pool
@@ -59,7 +61,7 @@ async def daily_staff_status_check():
             # Если сотрудник не найден или уволен - деактивируем
             if not staff or not staff['is_employed']:
                 await conn.execute("UPDATE users SET is_active = FALSE WHERE telegram_id = $1", user['telegram_id'])
-                print(f"Пользователь c telegram_id:({user['telegram_id']}) был деактивирован")
+                logging.info(f"Пользователь c telegram_id:({user['telegram_id']}) был деактивирован")
 
 
 async def check_staff_authorization(phone: str):
