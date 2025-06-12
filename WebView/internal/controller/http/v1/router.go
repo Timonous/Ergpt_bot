@@ -10,16 +10,17 @@ import (
 type containerRoutes struct {
 	t IUsersService
 	n INewsService
+	s IStatisticsService
 	l logger.Logger
 }
 
-func newUserRoutes(handler *echo.Group, t IUsersService, n INewsService, l logger.Logger) {
-	r := &containerRoutes{t, n, l}
+func newUserRoutes(handler *echo.Group, t IUsersService, n INewsService, s IStatisticsService, l logger.Logger) {
+	r := &containerRoutes{t, n, s, l}
 
 	// GET /api/v1/users/{telegramID}
 	handler.GET("/users/:telegram_id", r.GetUser)
 
-	// GET /api/v1/articles?limit=5&offset=0
+	// GET /api/v1/news?limit=5&offset=0
 	handler.GET("/news", r.GetNews)
 
 	// POST /api/v1/news/like/{news_id}
@@ -27,9 +28,12 @@ func newUserRoutes(handler *echo.Group, t IUsersService, n INewsService, l logge
 
 	// POST /api/v1/news/dislike/{news_id}
 	handler.POST("/news/dislike/:news_id", r.DislikeNews)
+
+	// GET /api/v1/statistics/graph
+	handler.GET("/statistics/graph", r.GetStatisticsGraphic)
 }
 
-func NewRouter(handler *echo.Echo, l logger.Logger, t IUsersService, n INewsService) {
+func NewRouter(handler *echo.Echo, l logger.Logger, t IUsersService, n INewsService, s IStatisticsService) {
 	// Middleware
 	handler.Use(middleware.Logger())
 	handler.Use(middleware.Recover())
@@ -46,6 +50,6 @@ func NewRouter(handler *echo.Echo, l logger.Logger, t IUsersService, n INewsServ
 
 	h := handler.Group("/api/v1")
 	{
-		newUserRoutes(h, t, n, l)
+		newUserRoutes(h, t, n, s, l)
 	}
 }
