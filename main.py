@@ -7,9 +7,34 @@ from apscheduler.triggers.cron import CronTrigger
 from aiogram import Bot, Dispatcher
 from db import create_pool
 from settings import config
-from bot.handlers import router as deepseek_router
+from bot.handlers import router as main_router
+from bot.group_handlers import router as group_router
 from bot.auth import router as auth_router, set_db_pool, daily_staff_status_check
+from aiogram.types import BotCommand, BotCommandScopeAllPrivateChats, BotCommandScopeAllGroupChats
 
+
+
+async def set_bot_commands(bot: Bot):
+    # Команды для всех приватных чатов
+    await bot.set_my_commands(
+        commands=[
+            BotCommand(command="help", description="Справка по боту"),
+            BotCommand(command="add", description="Добавить в группу"),
+            BotCommand(command="restart", description="Перезапуск чата"),
+            BotCommand(command="change", description="Сменить модель"),
+            BotCommand(command="support", description="Контакты тех поддержки"),
+        ],
+        scope=BotCommandScopeAllPrivateChats()
+    )
+
+    # Команды для всех групп
+    await bot.set_my_commands(
+        commands=[
+            BotCommand(command="help", description="Информация о боте"),
+            BotCommand(command="restart", description="Перезапуск чата"),
+        ],
+        scope=BotCommandScopeAllGroupChats()
+    )
 
 
 async def main() -> None:
@@ -18,11 +43,13 @@ async def main() -> None:
     set_db_pool(db_pool)
 
     bot = Bot(token=config.BOT_TOKEN)
+    await set_bot_commands(bot)
     dp = Dispatcher()
 
     # Подключение роутеров
+    dp.include_router(group_router)
     dp.include_router(auth_router)
-    dp.include_router(deepseek_router)
+    dp.include_router(main_router)
 
     #Настройка автозапуска функции
     scheduler = AsyncIOScheduler()
