@@ -26,3 +26,8 @@ type PaginatedResponse struct {
 	Limit  int    `json:"limit"`
 	Offset int    `json:"offset"`
 }
+
+type LikeResponse struct {
+	NewsID   int `json:"news_id"`
+	NewLikes int `json:"new_likes"`
+}

@@ -11,6 +11,8 @@ import (
 
 type INewsService interface {
 	GetNews(ctx context.Context, limit, offset int) ([]entity.News, error)
+	AddLike(ctx context.Context, newsID int) (int, error)
+	DeleteLike(ctx context.Context, newsID int) (int, error)
 }
 
 func (r *containerRoutes) GetNews(c echo.Context) error {
@@ -42,5 +44,55 @@ func (r *containerRoutes) GetNews(c echo.Context) error {
 		Total:  limit + offset,
 		Limit:  limit,
 		Offset: offset,
+	})
+}
+
+func (r *containerRoutes) LikeNews(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	newsIDStr := c.Param("news_id")
+
+	newsID, err := strconv.Atoi(newsIDStr)
+	if err != nil || newsID < 1 {
+		errorResponse(c, http.StatusBadRequest, "wrong news id")
+
+		return fmt.Errorf("failed to get news: %w", err)
+	}
+
+	likes, err := r.n.AddLike(ctx, newsID)
+	if err != nil {
+		errorResponse(c, http.StatusInternalServerError, "failed to add like")
+
+		return fmt.Errorf("failed to add like: %w", err)
+	}
+
+	return c.JSON(http.StatusOK, entity.LikeResponse{
+		NewsID:   newsID,
+		NewLikes: likes,
+	})
+}
+
+func (r *containerRoutes) DislikeNews(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	newsIDStr := c.Param("news_id")
+
+	newsID, err := strconv.Atoi(newsIDStr)
+	if err != nil || newsID < 1 {
+		errorResponse(c, http.StatusBadRequest, "wrong news id")
+
+		return fmt.Errorf("failed to get news: %w", err)
+	}
+
+	likes, err := r.n.DeleteLike(ctx, newsID)
+	if err != nil {
+		errorResponse(c, http.StatusInternalServerError, "failed to add like")
+
+		return fmt.Errorf("failed to add like: %w", err)
+	}
+
+	return c.JSON(http.StatusOK, entity.LikeResponse{
+		NewsID:   newsID,
+		NewLikes: likes,
 	})
 }

@@ -47,13 +47,16 @@ func main() {
 	usersLogger.Info(ctx, "connected to database successfully")
 
 	userRepo := repository.NewUserRepository(pg)
+	newsRepo := repository.NewNewsRepository(pg)
+
 	userService := service.NewUserService(userRepo)
+	newsService := service.NewNewsService(newsRepo, userRepo)
 
 	handler := echo.New()
 
 	usersLogger.Info(ctx, fmt.Sprintf("server starting on port:%d", cfg.RestServerPort))
 
-	v1.NewRouter(handler, usersLogger, userService)
+	v1.NewRouter(handler, usersLogger, userService, newsService)
 
 	httpServer := httpserver.New(handler, httpserver.Port(strconv.Itoa(cfg.RestServerPort)))
 

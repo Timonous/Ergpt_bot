@@ -7,6 +7,28 @@ import (
 	"net/http"
 )
 
+type containerRoutes struct {
+	t IUsersService
+	n INewsService
+	l logger.Logger
+}
+
+func newUserRoutes(handler *echo.Group, t IUsersService, n INewsService, l logger.Logger) {
+	r := &containerRoutes{t, n, l}
+
+	// GET /api/v1/users/{telegramID}
+	handler.GET("/users/:telegram_id", r.GetUser)
+
+	// GET /api/v1/articles?limit=5&offset=0
+	handler.GET("/news", r.GetNews)
+
+	// POST /api/v1/news/like/{news_id}
+	handler.POST("/news/like/:news_id", r.LikeNews)
+
+	// POST /api/v1/news/dislike/{news_id}
+	handler.POST("/news/dislike/:news_id", r.DislikeNews)
+}
+
 func NewRouter(handler *echo.Echo, l logger.Logger, t IUsersService, n INewsService) {
 	// Middleware
 	handler.Use(middleware.Logger())
@@ -18,7 +40,7 @@ func NewRouter(handler *echo.Echo, l logger.Logger, t IUsersService, n INewsServ
 	//	AllowCredentials: true,                                                                                             // Разрешить передачу кук и заголовков авторизации
 	//}))
 
-	handler.GET("/api/article/health", func(c echo.Context) error {
+	handler.GET("/api/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 	})
 
