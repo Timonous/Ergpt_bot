@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/Timonous/Ergpt_bot/webview/internal/entity"
 	"github.com/Timonous/Ergpt_bot/webview/pkg/db/postgres"
 )
@@ -51,4 +52,20 @@ func (n *NewsRepository) GetNews(ctx context.Context, limit, offset uint64) ([]e
 	}
 
 	return news, nil
+}
+
+func (n *NewsRepository) ChangeLike(ctx context.Context, newsID int, vote int) (int, error) {
+	sql, args, err := n.Builder.Update("news").
+		Set("likes", sq.Expr(fmt.Sprintf("%s + %d", "likes", vote))).
+		Where(sq.Eq{"id": newsID}).
+		Suffix("RETURNING likes").
+		ToSql()
+
+	var newValueLikes int
+	err = n.Pool.QueryRow(ctx, sql, args...).Scan(&newValueLikes)
+	if err != nil {
+		return 0, fmt.Errorf("failed to add like: %w", err)
+	}
+
+	return newValueLikes, nil
 }
