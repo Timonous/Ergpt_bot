@@ -27,7 +27,7 @@ async def group_help_handler(message: Message) -> None:
         "Для авторизации перейдите в личный чат @Ergpt_test_bot и пройдите регистрацию")
     await message.answer(help_text)
 
-@router.message(Command("restart"), F.chat.type.in_({ChatType.GROUP, ChatType.SUPERGROUP}))
+@router.message(Command("restart"), (F.chat.type.in_({ChatType.GROUP, ChatType.SUPERGROUP} & (~F.is_topic_message))))
 async def group_restart_handler(message: Message) -> None:
     if not await group_authorize_user(message):
         return
@@ -35,9 +35,11 @@ async def group_restart_handler(message: Message) -> None:
     #Расписать логику отчистки чата если в групповом чате будет отдельный чат в ergpt
 
 @router.message(
-    (F.chat.type.in_({ChatType.GROUP, ChatType.SUPERGROUP}))
-    & F.text.contains("Ergpt") | F.text.contains("Эргпт")
-    | (F.reply_to_message.from_user)
+    (
+        F.chat.type.in_({ChatType.GROUP, ChatType.SUPERGROUP})
+        & (~F.is_topic_message)
+        & (F.text.contains("Ergpt") | F.text.contains("Эргпт") | (F.reply_to_message.from_user.id))
+    )
 )
 async def group_handle_ergpt(message: Message, bot: Bot):
     if not await group_authorize_user(message):
