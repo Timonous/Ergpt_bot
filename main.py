@@ -32,6 +32,7 @@ async def set_bot_commands(bot: Bot):
         commands=[
             BotCommand(command="help", description="Информация о боте"),
             BotCommand(command="restart", description="Перезапуск чата"),
+            BotCommand(command="support", description="Контакты тех поддержки"),
         ],
         scope=BotCommandScopeAllGroupChats()
     )
