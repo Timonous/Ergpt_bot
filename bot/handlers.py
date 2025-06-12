@@ -53,7 +53,7 @@ async def command_help_handler(message: Message) -> None:
         "/restart - Перезапуск чата\n"
         "/support - Контакты тех. поддержки\n"
         "/change - Выбрать модель\n"
-        "/addChat - Добавить ergpt в беседу\n\n"
+        "/add - Добавить ergpt в беседу\n\n"
         "Вы можете выбрать получение ответов от deepseek, но со следующими ограничениями:\n"
         "* История чата не сохраняется\n"
         "* Добавить в беседу модель нельзя\n"
@@ -142,11 +142,7 @@ async def command_restart_handler(message: Message) -> None:
 #     await message.reply(tg_md, parse_mode=ParseMode.MARKDOWN_V2)
 
 
-@router.message(
-    (F.chat.type == ChatType.PRIVATE)
-    | F.text.contains("ergpt")  # можно заменить на username, если нужно
-    | (F.reply_to_message & F.reply_to_message.from_user)
-)
+@router.message(F.chat.type == ChatType.PRIVATE)
 async def handle_ergpt(message: Message, bot: Bot):
     if not await authorize_user(message):
         return
