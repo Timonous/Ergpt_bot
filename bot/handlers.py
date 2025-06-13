@@ -1,7 +1,5 @@
 import asyncio
 import re
-from datetime import datetime, timezone, timedelta
-from asyncpg import Pool
 
 from aiogram import Router, Bot, F
 from aiogram.enums import ChatAction, ParseMode, ChatType
@@ -9,6 +7,8 @@ from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, ChatMemberUpdated
 from telegramify_markdown import markdownify
 from telegramify_markdown.customize import get_runtime_config
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 
 from bot.rate_limiter import rateLimiter
 from bot.api.deepseek import call_deepseek_api
@@ -37,6 +37,11 @@ def escape_markdown(text: str) -> str:
     escape_chars = r'\_*[]()~`>#+-=|{}.!'
     return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
 
+class DeepSeekStates(StatesGroup):
+    # Класс состояний
+    waiting_for_question = State()
+
+
 @router.message(CommandStart(), F.chat.type == ChatType.PRIVATE)
 async def command_start_handler(message: Message) -> None:
     await message.answer(
@@ -46,16 +51,14 @@ async def command_start_handler(message: Message) -> None:
 
 @router.message(Command("help"), F.chat.type == ChatType.PRIVATE)
 async def command_help_handler(message: Message) -> None:
-    if not await authorize_user(message):
-        return
     help_text = (
         "ℹ️ *Справка по боту Ergpt*\n\n"
         "Доступные команды:\n"
         "/restart - Перезапуск чата\n"
         "/support - Контакты тех. поддержки\n"
-        "/change - Выбрать модель\n"
-        "/add - Добавить ergpt в беседу\n\n"
-        "Вы можете выбрать получение ответов от deepseek, но со следующими ограничениями:\n"
+        "/add - Добавить ergpt в беседу\n"
+        "/deepseek - Сделать запрос в deepseek (авторизация не требуется)\n\n"
+        "Вы можете выбрать сделать один запрос в deepseek, но со следующими ограничениями:\n"
         "* История чата не сохраняется\n"
         "* Добавить в беседу модель нельзя\n"
         "* Отсутствует возможность работы с файлами\n"
@@ -80,11 +83,10 @@ async def command_add_handler(message: Message) -> None:
     )
     await message.answer("Добавить в групповой чат 👇", reply_markup=keyboard)
 
-@router.message(Command("change"), F.chat.type == ChatType.PRIVATE)
-async def command_change_handler(message: Message) -> None:
-    if not await authorize_user(message):
-        return
-    await message.answer("Тут будет логика смены модели...")
+@router.message(Command("deepseek"), F.chat.type == ChatType.PRIVATE)
+async def command_change_handler(message: Message, state: FSMContext) -> None:
+    await message.answer("✍ Напишите ваш вопрос, отправлю ответ от deepseek")
+    await state.set_state(DeepSeekStates.waiting_for_question)
 
 @router.message(Command("restart"), F.chat.type == ChatType.PRIVATE)
 async def command_restart_handler(message: Message) -> None:
@@ -102,45 +104,45 @@ async def command_restart_handler(message: Message) -> None:
                 "Задавай вопрос, я с радостью на него отвечу!"
             )
     await message.answer(text)
-# @router.message(
-#     (F.chat.type == ChatType.PRIVATE)
-#     | F.text.contains("DeepSeek")  # можно заменить на username, если нужно
-#     | (F.reply_to_message & F.reply_to_message.from_user)
-# )
-# async def handle_deepseek(message: Message, bot: Bot):
-#     if not await authorize_user(message):
-#         return
-#     user_id = message.from_user.id
-#
-#     allowed = await limiter.is_allowed(user_id)
-#     if not allowed:
-#         await message.reply("⏳ Слишком много запросов. Попробуйте позже.")
-#         return
-#
-#     global_allowed = await limiter.is_global_limit_allowed()
-#     if not global_allowed:
-#         await message.reply("⚠️ Сервер временно перегружен. Попробуйте позже.")
-#         return
-#
-#     chat_id = message.chat.id
-#     text = message.text.strip()
-#     async def show_typing():
-#         while True:
-#             await bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
-#             await asyncio.sleep(4)
-#
-#     typing_task = asyncio.create_task(show_typing())
-#     try:
-#         reply = await call_deepseek_api(text)
-#     except Exception as e:
-#         escaped_error = escape_markdown(str(e))
-#         await message.reply(f"Ошибка при обращении к DeepSeek: {escaped_error}")
-#         return
-#     finally:
-#         typing_task.cancel()
-#
-#     tg_md = markdownify(reply, max_line_length=None, normalize_whitespace=False)
-#     await message.reply(tg_md, parse_mode=ParseMode.MARKDOWN_V2)
+
+@router.message(DeepSeekStates.waiting_for_question, F.chat.type == ChatType.PRIVATE)
+async def handle_deepseek(message: Message, bot: Bot, state: FSMContext):
+    user_id = message.from_user.id
+
+    allowed = await limiter.is_allowed(user_id)
+    if not allowed:
+        await message.reply("⏳ Слишком много запросов. Попробуйте позже.")
+        await state.clear()
+        return
+
+    global_allowed = await limiter.is_global_limit_allowed()
+    if not global_allowed:
+        await message.reply("⚠️ Сервер временно перегружен. Попробуйте позже.")
+        await state.clear()
+        return
+
+    chat_id = message.chat.id
+    text = message.text.strip()
+
+    async def show_typing():
+        while True:
+            await bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+            await asyncio.sleep(4)
+
+    typing_task = asyncio.create_task(show_typing())
+    try:
+        reply = await call_deepseek_api(text)
+    except Exception as e:
+        escaped_error = escape_markdown(str(e))
+        await message.reply(f"Ошибка при обращении к DeepSeek: {escaped_error}")
+        return
+    finally:
+        typing_task.cancel()
+        await state.clear()
+
+    tg_md = markdownify(reply, max_line_length=None, normalize_whitespace=False)
+    await message.reply(tg_md, parse_mode=ParseMode.MARKDOWN_V2)
+    await message.answer("😌 Если хотите ещё что-то спросить у deepseek воспользуйтесь командой /deepseek повторно.")
 
 
 @router.message(F.chat.type == ChatType.PRIVATE)
