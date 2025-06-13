@@ -5,25 +5,12 @@ services:
     env_file:
       - .env
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
 
-  postgres:
-    image: postgres:15-alpine
-    container_name: postgres_container
+  webview:
+    build: ./WebView
+    container_name: webview
     env_file:
       - .env
-    volumes:
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./postgres_data:/var/lib/postgresql/data
     ports:
-      - "${DB_PORT}:${DB_PORT}"  # 5432:5432
-    healthcheck:
-      test: [ "CMD-SHELL", "psql -U ${DB_USER} -d ${DB_NAME}" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - "8080:8080"  # 8080:8080
 
-volumes:
-  postgres_data:

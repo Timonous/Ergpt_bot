@@ -1,4 +1,4 @@
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24 AS builder
 
 WORKDIR /usr/local/src
 
@@ -12,7 +12,7 @@ FROM alpine AS runner
 
 COPY --from=builder /usr/local/src/bin/app /
 
-EXPOSE 8082 8088
+EXPOSE 8080
 
 COPY .env /
 

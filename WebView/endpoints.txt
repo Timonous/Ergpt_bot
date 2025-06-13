@@ -1,0 +1,117 @@
+
+1. Получение пользователя
+Запрос: GET /api/v1/users/{telegramID}
+- telegramID - телеграмм id пользователя
+- Без тела запроса и доп хедеров
+- Пример адреса: localhost:8080/api/v1/users/823397841
+
+Ответ:
+{
+    "id": 4,
+    "telegram_id": "823397841",
+    "role_id": 2,
+    "is_active": true,
+    "name": "Данил",
+    "surname": "Разработчиков",
+    "patronymic": "Разрабович",
+    "vacancy": "developer",
+    "is_employed": true,
+    "email": "developer@mail.ru",
+    "phone": "+79516362848"
+}
+
+2. Получение новостей
+Запрос: GET /api/v1/news?limit=5&offset=0
+- offset - начальный индекс новости
+- limit - количество новостей в ответе (но мб и меньше, если просто в бд не хватает)
+- Без тела запроса и доп хедеров
+- Пример адреса: localhost:8080/api/v1/news?limit=5&offset=0
+
+Ответ (в примере одна новость, но по сути их может быть несколько):
+{
+    "items": [
+        {
+            "ID": 1,
+            "Header": "testTitle",
+            "Text": "test tet",
+            "Author": {
+                "id": 3,
+                "telegram_id": "1150515410",
+                "role_id": 2,
+                "is_active": true,
+                "name": "Кирилл",
+                "surname": "Иванчин",
+                "patronymic": "Дмитриевич",
+                "vacancy": "developer",
+                "is_employed": true,
+                "email": "testKirill@mail.ru",
+                "phone": "+79526462701"
+            },
+            "CreatedAt": "2025-06-11T12:19:34.660231+03:00",
+            "Likes": 0
+        }
+    ],
+    "total": 5,
+    "limit": 5,
+    "offset": 0
+}
+
+3. Поставить лайк новости
+Запрос: POST /api/v1/news/like/{news_id}
+- news_id - id новости
+- Без тела запроса и доп хедеров
+- Пример адреса: localhost:8080/api/v1/news/like/1
+
+Ответ:
+{
+    "news_id": 1,
+    "new_likes": 1
+}
+- news_id - id новости
+- new_likes - новое кол-во лайков на новости
+
+
+4. Убрать лайк с новости
+Запрос: POST /api/v1/news/dislike/{news_id}
+- news_id - id новости
+- Без тела запроса и доп хедеров
+- Пример адреса: localhost:8080/api/v1/news/dislike/1
+
+Ответ:
+{
+    "news_id": 1,
+    "new_likes": 0
+}
+- news_id - id новости
+- new_likes - новое кол-во лайков на новости
+
+5. Получение статистики бота для графика (https://www.figma.com/design/8QMy7nHhkSZgSJQmRfzUGU/practice?node-id=79-465&t=USwKMO18MWuGxzpi-4)
+Запрос: GET /api/v1/statistics/graph
+Пример запроса: localhost:8080/api/v1/statistics/graph
+Тело запроса:
+{
+  "startDate": "2025-05-14T00:00:00Z",
+  "endDate": "2025-05-15T23:59:59Z"
+}
+- startDate - начальная дата периода (включительно)
+- endDate - последняя дата периода (включительно)
+
+
+Ответ:
+{
+    "graphInfo": [
+        {
+            "day": "2025-05-14T00:00:00Z",
+            "count": 5
+        },
+        {
+            "day": "2025-05-15T00:00:00Z",
+            "count": 2
+        }
+    ],
+    "uniqueUserInPeriod": 1
+}
+
+- day - дата
+- count - кол-во обращений к боту в этот день
+- uniqueUserInPeriod - кол-во уникальных пользователей за выбранный период
