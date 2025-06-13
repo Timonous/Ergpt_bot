@@ -2,22 +2,15 @@ import logging
 
 from aiogram import Router, F
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
-from asyncpg import Pool
 import re
 
 from bot.repository.staff_repository import get_is_employed_by_phone, get_staff_by_phone
 from bot.repository.user_repository import get_user_info_by_tguser, get_active_users, update_users_is_active, \
     insert_new_user
+from db import get_db_pool
 
 router = Router()
-db_pool: Pool = None
 
-def set_db_pool(pool: Pool):
-    global db_pool
-    db_pool = pool
-
-def get_db_pool():
-    return db_pool
 
 def normalize_phone_number(raw_phone: str) -> str:
     # Удаляем все лишние символы
@@ -44,6 +37,7 @@ def normalize_phone_number(raw_phone: str) -> str:
         return '+' + digits  # на всякий случай
 
 async def get_auth_user_by_telegramid(telegram_id: int):
+    db_pool = get_db_pool()
     async with db_pool.acquire() as conn:
         user = await get_user_info_by_tguser(telegram_id)
         return user
@@ -53,6 +47,7 @@ async def daily_staff_status_check():
     Деактивирует пользователей, которые больше не работают в компании.
     Возвращает количество деактивированных пользователей.
     """
+    db_pool = get_db_pool()
     async with db_pool.acquire() as conn:
         # Получаем всех активных пользователей
         users = await get_active_users()
@@ -73,6 +68,7 @@ async def check_staff_authorization(phone: str):
     Проверяет наличие телефона в таблице staff и статус isemployed.
     Возвращает (True, staff_id) при успехе или (False, причина).
     """
+    db_pool = get_db_pool()
     normalized_phone = normalize_phone_number(phone)
     async with db_pool.acquire() as conn:
         staff = await get_staff_by_phone(normalized_phone)
@@ -138,6 +134,7 @@ async def handle_contact(message: Message):
 
     if await get_auth_user_by_telegramid(message.chat.id) is None:
         # Регистрируем пользователя
+        db_pool = get_db_pool()
         async with db_pool.acquire() as conn:
             await insert_new_user(message, phone, staff_id)
         await message.answer(

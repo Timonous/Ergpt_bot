@@ -6,11 +6,11 @@ from apscheduler.triggers.cron import CronTrigger
 
 from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand, BotCommandScopeAllPrivateChats, BotCommandScopeAllGroupChats
-from db import create_pool
+from db import create_pool, set_db_pool
 from settings import config
 from bot.handlers import router as main_router
 from bot.group_handlers import router as group_router
-from bot.auth import router as auth_router, set_db_pool, daily_staff_status_check
+from bot.auth import router as auth_router, daily_staff_status_check
 from bot.api.ergpt import daily_chats_delete
 
 
@@ -22,7 +22,7 @@ async def set_bot_commands(bot: Bot):
             BotCommand(command="help", description="Справка по боту"),
             BotCommand(command="add", description="Добавить в группу"),
             BotCommand(command="restart", description="Перезапуск чата"),
-            BotCommand(command="change", description="Сменить модель"),
+            BotCommand(command="deepseek", description="Сделать запрос в deepseek"),
             BotCommand(command="support", description="Контакты тех поддержки"),
         ],
         scope=BotCommandScopeAllPrivateChats()

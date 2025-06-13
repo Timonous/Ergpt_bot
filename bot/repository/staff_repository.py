@@ -1,4 +1,5 @@
-from bot.auth import get_db_pool
+from db import get_db_pool
+
 
 async def get_is_employed_by_phone(phone: str):
     db_pool = get_db_pool()

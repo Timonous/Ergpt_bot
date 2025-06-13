@@ -1,4 +1,4 @@
-from bot.auth import get_db_pool
+from db import get_db_pool
 
 async def get_userid_by_tguser(tguser_id: str):
     db_pool = get_db_pool()

@@ -1,4 +1,4 @@
-from bot.auth import get_db_pool
+from db import get_db_pool
 
 
 async def ensure_user_exists(user_id: int):
