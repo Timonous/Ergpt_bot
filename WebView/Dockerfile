@@ -6,14 +6,16 @@ COPY ["go.mod", "go.sum", "./"]
 RUN go mod download
 
 COPY . .
-RUN go build -o ./bin/app cmd/main/main.go
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./bin/app cmd/main/main.go
 
 FROM alpine AS runner
 
-COPY --from=builder /usr/local/src/bin/app /
+WORKDIR /
+COPY --from=builder /usr/local/src/bin/app /app
+
+COPY .env .
 
 EXPOSE 8080
-
-COPY .env /
 
 CMD ["/app"]
