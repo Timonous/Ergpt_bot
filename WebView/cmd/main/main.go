@@ -48,15 +48,17 @@ func main() {
 
 	userRepo := repository.NewUserRepository(pg)
 	newsRepo := repository.NewNewsRepository(pg)
+	logsRepo := repository.NewLogsRepository(pg)
 
 	userService := service.NewUserService(userRepo)
 	newsService := service.NewNewsService(newsRepo, userRepo)
+	statisticsService := service.NewStatisticsService(logsRepo)
 
 	handler := echo.New()
 
 	usersLogger.Info(ctx, fmt.Sprintf("server starting on port:%d", cfg.RestServerPort))
 
-	v1.NewRouter(handler, usersLogger, userService, newsService)
+	v1.NewRouter(handler, usersLogger, userService, newsService, statisticsService)
 
 	httpServer := httpserver.New(handler, httpserver.Port(strconv.Itoa(cfg.RestServerPort)))
 

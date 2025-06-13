@@ -19,14 +19,15 @@ func NewLogsRepository(pg *postgres.Postgres) *LogsRepository {
 
 func (l *LogsRepository) GetLogsCountByDay(ctx context.Context, startDate, endDate time.Time) ([]entity.LogsCountByDay, error) {
 	query, args, err := sq.Select(
-		"DATE(l.createdAt) as day",
+		"DATE(l.created_at) as day",
 		"COUNT(*) as count",
 	).
 		From("logs l").
-		Where(sq.Expr("l.createdAt BETWEEN ? AND ?", startDate, endDate)).
-		GroupBy("DATE(l.createdAt)").
+		Where("l.created_at >= $1 AND l.created_at <= $2", startDate, endDate).
+		GroupBy("DATE(l.created_at)").
 		OrderBy("day ASC").
 		ToSql()
+	fmt.Println(query, args)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build query: %w", err)
 	}
@@ -56,9 +57,9 @@ func (l *LogsRepository) GetLogsCountByDay(ctx context.Context, startDate, endDa
 }
 
 func (l *LogsRepository) GetNumUsersByPeriod(ctx context.Context, startDate, endDate time.Time) (int, error) {
-	query, args, err := sq.Select("COUNT(DISTINCT userID)").
+	query, args, err := sq.Select("COUNT(DISTINCT user_id)").
 		From("logs").
-		Where(sq.Expr("createdAt BETWEEN ? AND ?", startDate, endDate)).
+		Where(sq.Expr("created_at BETWEEN $1 AND $2", startDate, endDate)).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 
