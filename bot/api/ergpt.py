@@ -1,7 +1,7 @@
 import logging
 import httpx
 from typing import Optional
-from bot.repository.chatRepository import get_outdated_chats, set_chat_deleted
+from bot.repository.chats_repository import get_outdated_chats, set_chat_deleted
 
 from settings import config
 

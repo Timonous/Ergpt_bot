@@ -5,6 +5,10 @@ from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKey
 from asyncpg import Pool
 import re
 
+from bot.repository.staff_repository import get_is_employed_by_phone, get_staff_by_phone
+from bot.repository.user_repository import get_user_info_by_tguser, get_active_users, update_users_is_active, \
+    insert_new_user
+
 router = Router()
 db_pool: Pool = None
 
@@ -41,7 +45,7 @@ def normalize_phone_number(raw_phone: str) -> str:
 
 async def get_auth_user_by_telegramid(telegram_id: int):
     async with db_pool.acquire() as conn:
-        user = await conn.fetchrow("SELECT * FROM users WHERE telegram_id = $1", str(telegram_id))
+        user = await get_user_info_by_tguser(telegram_id)
         return user
 
 async def daily_staff_status_check():
@@ -51,16 +55,16 @@ async def daily_staff_status_check():
     """
     async with db_pool.acquire() as conn:
         # Получаем всех активных пользователей
-        users = await conn.fetch("SELECT * FROM users WHERE is_active = TRUE")
+        users = await get_active_users()
 
         for user in users:
             phone = user['phone']
             # Проверяем сотрудника в таблице staff
-            staff = await conn.fetchrow("SELECT is_employed FROM staff WHERE phone = $1", phone)
+            staff = await get_is_employed_by_phone(phone)
 
             # Если сотрудник не найден или уволен - деактивируем
             if not staff or not staff['is_employed']:
-                await conn.execute("UPDATE users SET is_active = FALSE WHERE telegram_id = $1", user['telegram_id'])
+                await update_users_is_active(user)
                 logging.info(f"Пользователь c telegram_id:({user['telegram_id']}) был деактивирован")
 
 
@@ -71,7 +75,7 @@ async def check_staff_authorization(phone: str):
     """
     normalized_phone = normalize_phone_number(phone)
     async with db_pool.acquire() as conn:
-        staff = await conn.fetchrow("SELECT * FROM staff WHERE phone = $1", normalized_phone)
+        staff = await get_staff_by_phone(normalized_phone)
         if not staff:
             return False, "😴 Извините, вы не являетесь сотрудником ЭР-Телеком"
         if staff.get("is_employed") is False:
@@ -135,10 +139,7 @@ async def handle_contact(message: Message):
     if await get_auth_user_by_telegramid(message.chat.id) is None:
         # Регистрируем пользователя
         async with db_pool.acquire() as conn:
-            await conn.execute(
-                "INSERT INTO users (telegram_id, phone, staff_id) VALUES ($1, $2, $3)",
-                str(message.chat.id), phone, staff_id
-            )
+            await insert_new_user(message, phone, staff_id)
         await message.answer(
             "✅ Спасибо! Регистрация прошла успешно.\n"
             "Задавай вопросы, и я с радостью на них отвечу!",

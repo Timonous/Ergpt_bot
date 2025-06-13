@@ -10,12 +10,13 @@ from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, C
 from telegramify_markdown import markdownify
 from telegramify_markdown.customize import get_runtime_config
 
-from bot.rateLimiter import rateLimiter
+from bot.rate_limiter import rateLimiter
 from bot.api.deepseek import call_deepseek_api
 from bot.api.ergpt import send_ergpt_message, create_ergpt_chat, delete_ergpt_chat
 from bot.auth import authorize_user
-from bot.repository.chatRepository import get_chat_for_user, set_chat_for_user, get_updateat_for_user, \
-    set_updateat_for_chat, ensure_user_exists, get_userid_by_tguser, ensure_chat_deleted, set_chat_deleted
+from bot.repository.chats_repository import get_chat_for_user, set_chat_for_user, get_updateat_for_user, \
+    set_updateat_for_chat, ensure_user_exists, ensure_chat_deleted, set_chat_deleted
+from bot.repository.user_repository import get_userid_by_tguser
 
 markdown_symbol = get_runtime_config().markdown_symbol
 markdown_symbol.head_level_1 = ""
@@ -172,12 +173,12 @@ async def handle_ergpt(message: Message, bot: Bot):
     if ergpt_chat_id == 1: # если у пользователя ещё не было чата, создаем его
         ergpt_chat_id = await create_ergpt_chat_for_user(user_id)
     else:
-        updated_at = await get_updatedat(user_id)
+        updated_at = await get_updated_at(user_id)
         if updated_at is not None and await is_deleted_chat_by_user(user_id): # если чат был удален, создаем новый
             await delete_ergpt_chat(ergpt_chat_id) # удаляем старый чат
             ergpt_chat_id = await create_ergpt_chat_for_user(user_id)
         else: #иначе просто обновляем время последенго обращения
-            await set_updatedat(user_id)
+            await set_updated_at(user_id)
     try:
         reply = await send_ergpt_message(chat_id = ergpt_chat_id, msg = text)
         if reply is None:
@@ -199,10 +200,10 @@ async def create_ergpt_chat_for_user(user_id: int):
     await set_chat_for_user(user_id, ergpt_chat_id)
     return ergpt_chat_id
 
-async def get_updatedat(user_id):
+async def get_updated_at(user_id):
     return await get_updateat_for_user(user_id)
 
-async def set_updatedat(user_id):
+async def set_updated_at(user_id):
     await set_updateat_for_chat(user_id)
     return True
 
