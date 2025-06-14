@@ -41,14 +41,17 @@ func (s *NewsService) GetNews(ctx context.Context, limit, offset int) ([]entity.
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user by author by id: %w", err)
 		}
-		
+
 		resNews = append(resNews, entity.News{
 			ID:        newEnt.ID,
 			Header:    newEnt.Header,
+			Summary:   newEnt.Summary,
 			Text:      newEnt.Text,
 			Author:    user,
 			CreatedAt: newEnt.CreatedAt,
 			Likes:     newEnt.Likes,
+			Comments:  newEnt.Comments,
+			Category:  newEnt.Category,
 		})
 	}
 

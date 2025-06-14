@@ -31,6 +31,7 @@ func (u *UserRepository) GetUserByTelegramID(ctx context.Context, telegramID str
 		"s.is_employed",
 		"s.vacancy",
 		"s.email",
+		"s.personal_phone",
 	).
 		From("users u").
 		Join("staff s ON u.staff_id = s.id").
@@ -54,6 +55,7 @@ func (u *UserRepository) GetUserByTelegramID(ctx context.Context, telegramID str
 		&user.IsEmployed,
 		&user.Vacancy,
 		&user.Email,
+		&user.PersonalPhone,
 	)
 
 	if err != nil {
@@ -64,6 +66,7 @@ func (u *UserRepository) GetUserByTelegramID(ctx context.Context, telegramID str
 		return nil, fmt.Errorf("failed to query user: %w", err)
 	}
 
+	fmt.Println("repo done")
 	return &user, nil
 }
 
