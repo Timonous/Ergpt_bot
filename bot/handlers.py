@@ -76,12 +76,12 @@ async def command_add_handler(message: Message) -> None:
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(
-                text="😇 Добавьте меня в групповой чат — я очень полезный!",
+                text="Добавить в групповой чат 👇",
                 url="https://t.me/Ergpt_test_bot?startgroup=start"
             )]
         ]
     )
-    await message.answer("Добавить в групповой чат 👇", reply_markup=keyboard)
+    await message.answer("😇 Добавьте меня в групповой чат — я очень полезный!", reply_markup=keyboard)
 
 @router.message(Command("deepseek"), F.chat.type == ChatType.PRIVATE)
 async def command_change_handler(message: Message, state: FSMContext) -> None:
@@ -142,7 +142,7 @@ async def handle_deepseek(message: Message, bot: Bot, state: FSMContext):
 
     tg_md = markdownify(reply, max_line_length=None, normalize_whitespace=False)
     await message.reply(tg_md, parse_mode=ParseMode.MARKDOWN_V2)
-    await message.answer("😌 Если хотите ещё что-то спросить у deepseek воспользуйтесь командой /deepseek повторно.")
+    await message.answer("😌 Если хотите ещё что-то спросить у deepseek напишите /deepseek повторно.")
 
 
 @router.message(F.chat.type == ChatType.PRIVATE)
