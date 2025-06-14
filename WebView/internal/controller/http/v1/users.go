@@ -36,5 +36,16 @@ func (r *containerRoutes) GetUser(c echo.Context) error {
 		return fmt.Errorf("failed to get user: %v", err)
 	}
 
-	return c.JSON(http.StatusOK, user)
+	return c.JSON(http.StatusOK, entity.UserResponse{
+		ID:            user.ID,
+		TelegramID:    user.TelegramID,
+		RoleID:        user.RoleID,
+		IsActive:      user.IsActive,
+		Name:          user.Name,
+		Surname:       user.Surname,
+		Vacancy:       user.Vacancy,
+		Email:         user.Email,
+		Phone:         user.Phone,
+		PersonalPhone: user.PersonalPhone,
+	})
 }

@@ -24,6 +24,9 @@ func (n *NewsRepository) GetNews(ctx context.Context, limit, offset uint64) ([]e
 		"author_id",
 		"created_at",
 		"likes",
+		"summary",
+		"comments",
+		"category",
 	).
 		From("news").
 		Limit(limit).
@@ -43,7 +46,17 @@ func (n *NewsRepository) GetNews(ctx context.Context, limit, offset uint64) ([]e
 	var news []entity.NewsDB
 	for rows.Next() {
 		var newEnt entity.NewsDB
-		err = rows.Scan(&newEnt.ID, &newEnt.Header, &newEnt.Text, &newEnt.AuthorID, &newEnt.CreatedAt, &newEnt.Likes)
+		err = rows.Scan(
+			&newEnt.ID,
+			&newEnt.Header,
+			&newEnt.Text,
+			&newEnt.AuthorID,
+			&newEnt.CreatedAt,
+			&newEnt.Likes,
+			&newEnt.Summary,
+			&newEnt.Comments,
+			&newEnt.Category,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to map news: %w", err)
 		}

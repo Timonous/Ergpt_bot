@@ -5,19 +5,25 @@ import "time"
 type NewsDB struct {
 	ID        int
 	Header    string
+	Summary   string
 	Text      string
 	AuthorID  int
 	CreatedAt time.Time
 	Likes     uint
+	Comments  uint
+	Category  string
 }
 
 type News struct {
-	ID        int
-	Header    string
-	Text      string
-	Author    User
-	CreatedAt time.Time
-	Likes     uint
+	ID        int       `json:"id"`
+	Header    string    `json:"title"`
+	Summary   string    `json:"summary"`
+	Text      string    `json:"content"`
+	Author    User      `json:"-"`
+	CreatedAt time.Time `json:"date"`
+	Likes     uint      `json:"likes"`
+	Comments  uint      `json:"comments"`
+	Category  string    `json:"category"`
 }
 
 type PaginatedResponse struct {
