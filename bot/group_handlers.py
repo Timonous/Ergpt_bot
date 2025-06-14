@@ -10,7 +10,7 @@ from bot.auth import group_authorize_user
 from bot.handlers import limiter
 
 from bot.repository.group_chats_repository import get_chat_for_group, set_chat_for_group, get_updateat_for_group, \
-    set_updateat_for_chat, ensure_group_exists, ensure_chat_deleted, set_chat_deleted
+    set_updateat_for_chat, ensure_group_exists, ensure_chat_deleted, set_groupt_chat_deleted
 from bot.api.ergpt import send_ergpt_message, create_ergpt_chat, delete_ergpt_chat
 
 
@@ -27,6 +27,10 @@ async def group_start_handler(message: Message) -> None:
         f"Напиши мое имя Ergpt или Эргпт со своим вопросом и я с радостью отвечу!"
     )
 
+@router.message(Command("support"), F.chat.type.in_({ChatType.GROUP, ChatType.SUPERGROUP}))
+async def group_support_handler(message: Message) -> None:
+    await message.answer("Тут будут контакты тех. поддержки...")
+
 @router.message(Command("help"), F.chat.type.in_({ChatType.GROUP, ChatType.SUPERGROUP}))
 async def group_help_handler(message: Message) -> None:
     help_text = (
@@ -39,26 +43,22 @@ async def group_help_handler(message: Message) -> None:
         "Для авторизации перейдите в личный чат @Ergpt_test_bot и пройдите регистрацию")
     await message.answer(help_text)
 
-@router.message(
-    Command("restart"),
-    F.chat.type.in_({ChatType.GROUP, ChatType.SUPERGROUP} & (~F.is_topic_message)) # возможн оошибка со скобками
-)
+@router.message(Command("restart"), F.chat.type.in_({ChatType.GROUP, ChatType.SUPERGROUP}) & ~F.is_topic_message)
 async def group_restart_handler(message: Message) -> None:
     if not await group_authorize_user(message):
         return
     group_id = message.chat.id
     ergpt_chat_id = await get_chat_for_group(group_id)
     text = "😴Упс, Что-то пошло не так...\nПопробуйте позже."
-    if ergpt_chat_id is not None:
+    if ergpt_chat_id is not None and ergpt_chat_id != 1:
         response = await delete_ergpt_chat(ergpt_chat_id)
         if response is not None:
-            await set_chat_deleted(group_id)
+            await set_groupt_chat_deleted(group_id)
             text = (
                 "😉Хорошо, начнем все с чистого листа\n"
                 "Задавай вопрос, я с радостью на него отвечу!"
             )
     await message.answer(text)
-    #Расписать логику отчистки чата если в групповом чате будет отдельный чат в ergpt
 
 @router.message(
     (
@@ -71,7 +71,6 @@ async def group_handle_ergpt(message: Message, bot: Bot):
     if not await group_authorize_user(message):
         return
     group_id = message.chat.id
-    #Тут нужно расписать логику отправки и получения запросов
     allowed = await limiter.is_allowed(group_id)
     if not allowed:
         await message.reply("⏳ Слишком много запросов. Попробуйте позже.")
@@ -129,4 +128,4 @@ async def is_deleted_chat_by_group(group_id: int):
     return await ensure_chat_deleted(group_id)
 
 async def delete_chat(group_id: int):
-    await set_chat_deleted(group_id)
+    await set_groupt_chat_deleted(group_id)
