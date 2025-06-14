@@ -1,9 +1,10 @@
 import re
+import asyncio
 
 from aiogram import Router, Bot, F
 from aiogram.filters import CommandStart, Command, ChatMemberUpdatedFilter
 from aiogram.types import ChatMemberUpdated, Message
-from aiogram.enums import ChatType, ChatMemberStatus, ParseMode
+from aiogram.enums import ChatType, ChatMemberStatus, ParseMode, ChatAction
 from telegramify_markdown import markdownify
 
 from bot.auth import group_authorize_user
@@ -61,11 +62,9 @@ async def group_restart_handler(message: Message) -> None:
     await message.answer(text)
 
 @router.message(
-    (
-        F.chat.type.in_({ChatType.GROUP, ChatType.SUPERGROUP})
-        & (~F.is_topic_message)
-        & (F.text.contains("Ergpt") | F.text.contains("Эргпт") | F.text.contains("ergpt") | F.text.contains("эргпт") | F.reply_to_message.from_user.id)
-    )
+    F.chat.type.in_({ChatType.GROUP, ChatType.SUPERGROUP})
+    & (~F.is_topic_message)
+    & (F.text.regexp(re.compile(r"ergpt|эргпт", re.IGNORECASE)) | F.reply_to_message.from_user.id)
 )
 async def group_handle_ergpt(message: Message, bot: Bot):
     if not await group_authorize_user(message):
@@ -82,6 +81,11 @@ async def group_handle_ergpt(message: Message, bot: Bot):
         return
 
     text = message.text.strip()
+    async def show_typing():
+        while True:
+            await bot.send_chat_action(chat_id=group_id, action=ChatAction.TYPING)
+            await asyncio.sleep(4)
+    typing_task = asyncio.create_task(show_typing())
 
     await check_group(group_id)  # проверяем, что пользователь есть в базе данных чатов
     ergpt_chat_id = await get_chat_for_group(group_id)  # ищем чат для юзера
@@ -103,6 +107,8 @@ async def group_handle_ergpt(message: Message, bot: Bot):
         escaped_error = escape_markdown(str(e))
         await message.reply(f"Ошибка при обращении к ergpt: {escaped_error}")
         return
+    finally:
+        typing_task.cancel()
 
     tg_md = markdownify(reply, max_line_length=None, normalize_whitespace=False)
     await message.reply(tg_md, parse_mode=ParseMode.MARKDOWN_V2)
