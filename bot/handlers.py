@@ -4,7 +4,7 @@ import re
 from aiogram import Router, Bot, F
 from aiogram.enums import ChatAction, ParseMode, ChatType
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, ChatMemberUpdated
+from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, ChatMemberUpdated, CallbackQuery
 from telegramify_markdown import markdownify
 from telegramify_markdown.customize import get_runtime_config
 from aiogram.fsm.context import FSMContext
@@ -42,6 +42,7 @@ class DeepSeekStates(StatesGroup):
 
 class SupportStates(StatesGroup):
     waiting_for_message = State()
+    waiting_for_admin_reply = State()
 
 
 
@@ -75,12 +76,42 @@ async def command_support_handler(message: Message, state: FSMContext) -> None:
 
 @router.message(SupportStates.waiting_for_message, F.chat.type == ChatType.PRIVATE)
 async def handle_support_message(message: Message, bot: Bot, state: FSMContext):
+    user_id = message.from_user.id
     message_text = f"❗ Вам пришло обращение от пользователя @{message.chat.username}:\n\n {message.text}"
     admin_users = await get_all_admin_users()
     if admin_users:
+        reply_keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[[InlineKeyboardButton(text="📨 Ответить", callback_data=f"reply_to_user_{user_id}")]]
+        )
         for admin in admin_users:
-            await bot.send_message(admin['telegram_id'], message_text)
+            await bot.send_message(admin['telegram_id'], message_text, reply_markup=reply_keyboard )
     await message.answer("👌 Спасибо, обращение было отправлено!")
+    await state.clear()
+
+@router.callback_query(F.data.startswith("reply_to_user_"))
+async def handle_reply_button(callback: CallbackQuery, bot: Bot, state: FSMContext):
+    user_id = int(callback.data.split("_")[-1])
+    await state.update_data(target_user_id=user_id)
+    await callback.message.answer("✍️ Введите ответ пользователю")
+    await state.set_state(SupportStates.waiting_for_admin_reply)
+    await callback.answer()
+
+@router.message(SupportStates.waiting_for_admin_reply, F.chat.type == ChatType.PRIVATE)
+async def handle_admin_reply(message: Message, bot: Bot, state: FSMContext):
+    data = await state.get_data()
+    target_user_id = data.get("target_user_id")
+    if not target_user_id:
+        await message.answer("❌ Ошибка: не найден получатель.")
+        return
+    try:
+        await bot.send_message(
+            target_user_id,
+            f"📩 Ответ от поддержки:\n\n{message.text}"
+        )
+        await message.answer("✅ Ответ отправлен!")
+    except Exception as e:
+        await message.answer(f"❌ Не удалось отправить ответ: {e}")
+
     await state.clear()
 
 @router.message(Command("add"), F.chat.type == ChatType.PRIVATE)
