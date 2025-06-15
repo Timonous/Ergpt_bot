@@ -1,7 +1,7 @@
 from db import get_db_pool
 
 # Получить команду по коду
-async def get_command_id_by_code(code: str) -> int | None:
+async def get_command_id_by_code(code: str):
     db_pool = get_db_pool()
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow("SELECT id FROM commands WHERE code = $1", code)
