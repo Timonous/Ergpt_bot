@@ -43,3 +43,11 @@ async def insert_new_user(message, phone, staff_id):
             str(message.chat.id), phone, staff_id
         )
         return row if row else None
+
+async def get_all_admin_users():
+    db_pool = get_db_pool()
+    async with db_pool.acquire() as conn:
+        admin_users = await conn.fetch(
+            "SELECT * FROM users WHERE role_id = 1"
+        )
+        return admin_users
