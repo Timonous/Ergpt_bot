@@ -16,8 +16,7 @@ from bot.api.ergpt import send_ergpt_message, create_ergpt_chat, delete_ergpt_ch
 from bot.auth import authorize_user
 from bot.repository.chats_repository import get_chat_for_user, set_chat_for_user, get_updateat_for_user, \
     set_updateat_for_chat, ensure_user_exists, ensure_chat_deleted, set_chat_deleted
-from bot.repository.user_repository import get_userid_by_tguser
-
+from bot.repository.user_repository import get_userid_by_tguser, get_all_admin_users
 markdown_symbol = get_runtime_config().markdown_symbol
 markdown_symbol.head_level_1 = ""
 markdown_symbol.head_level_2 = ""
@@ -40,6 +39,10 @@ def escape_markdown(text: str) -> str:
 class DeepSeekStates(StatesGroup):
     # Класс состояний
     waiting_for_question = State()
+
+class SupportStates(StatesGroup):
+    waiting_for_message = State()
+
 
 
 @router.message(CommandStart(), F.chat.type == ChatType.PRIVATE)
@@ -66,8 +69,19 @@ async def command_help_handler(message: Message) -> None:
     await message.answer(help_text)
 
 @router.message(Command("support"))
-async def command_support_handler(message: Message) -> None:
-    await message.answer("Тут будут контакты тех. поддержки...")
+async def command_support_handler(message: Message, state: FSMContext) -> None:
+    await message.answer("✍ Напишите что у вас случилось, я отправил обращение в тех. поддержку")
+    await state.set_state(SupportStates.waiting_for_message)
+
+@router.message(SupportStates.waiting_for_message, F.chat.type == ChatType.PRIVATE)
+async def handle_support_message(message: Message, bot: Bot, state: FSMContext):
+    message_text = f"❗ Вам пришло обращение от пользователя @{message.chat.username}:\n\n {message.text}"
+    admin_users = await get_all_admin_users()
+    if admin_users:
+        for admin in admin_users:
+            await bot.send_message(admin['telegram_id'], message_text)
+    await message.answer("👌 Спасибо, обращение было отправлено!")
+    await state.clear()
 
 @router.message(Command("add"), F.chat.type == ChatType.PRIVATE)
 async def command_add_handler(message: Message) -> None:
