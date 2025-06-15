@@ -1,6 +1,6 @@
 import asyncio
 import re
-
+import os
 from aiogram import Router, Bot, F
 from aiogram.enums import ChatAction, ParseMode, ChatType
 from aiogram.filters import CommandStart, Command
@@ -27,7 +27,7 @@ router = Router()
 # Конфигурация рейт-лимита
 MAX_REQUESTS = 1 # количество запросов от 1 человека
 TIME_WINDOW = 5 # таймаут между запросами
-REDIS_URL = "redis://localhost"  # URL Redis сервера
+REDIS_URL = os.getenv("REDIS_HOST")  # URL Redis сервера
 MAX_GLOBAL = 10 # максимум одновременных пользователей, которые могут сдлеать запрос
 
 limiter = rateLimiter(max_requests = MAX_REQUESTS, window = TIME_WINDOW, redis_url = REDIS_URL, max_global = MAX_GLOBAL)
