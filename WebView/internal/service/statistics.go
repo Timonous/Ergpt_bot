@@ -22,7 +22,19 @@ func NewStatisticsService(logsRepo ILogsRepository) *StatisticsService {
 	return &StatisticsService{logsRepo: logsRepo}
 }
 
-func (s *StatisticsService) GetBotStatistics(ctx context.Context, startDate, endDate time.Time) ([]entity.LogsCountByDay, int, error) {
+func (s *StatisticsService) GetBotStatistics(ctx context.Context, startDateStr, endDateStr string) ([]entity.LogsCountByDay, int, error) {
+	startDate, err := time.Parse("2006-01-02", startDateStr)
+	fmt.Println(startDate)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to parse start date: %w", err)
+	}
+
+	endDate, err := time.Parse("2006-01-02", endDateStr)
+	fmt.Println(endDate)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to parse end date: %w", err)
+	}
+
 	if startDate.Compare(endDate) != -1 {
 		return nil, 0, errors.New("start date must be before end date")
 	}
