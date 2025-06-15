@@ -30,7 +30,7 @@ async def group_start_handler(message: Message) -> None:
 
 @router.message(Command("support"), F.chat.type.in_({ChatType.GROUP, ChatType.SUPERGROUP}))
 async def group_support_handler(message: Message) -> None:
-    await message.answer("Тут будут контакты тех. поддержки...")
+    await message.answer("⭐ Перейдите в бота @Ergpt_test_bot и введите /support для обращения в тех. поддержку")
 
 @router.message(Command("help"), F.chat.type.in_({ChatType.GROUP, ChatType.SUPERGROUP}))
 async def group_help_handler(message: Message) -> None:
@@ -64,7 +64,7 @@ async def group_restart_handler(message: Message) -> None:
 @router.message(
     F.chat.type.in_({ChatType.GROUP, ChatType.SUPERGROUP})
     & (~F.is_topic_message)
-    & (F.text.regexp(re.compile(r"ergpt|эргпт", re.IGNORECASE)) | F.reply_to_message.from_user.id)
+    & (F.text.regexp(re.compile(r"ergpt|эргпт", re.IGNORECASE)) | F.reply_to_message.from_user.id == F.bot.id)
 )
 async def group_handle_ergpt(message: Message, bot: Bot):
     if not await group_authorize_user(message):
