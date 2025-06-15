@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Timonous/Ergpt_bot/webview/internal/entity"
 	"time"
+
+	"github.com/Timonous/Ergpt_bot/webview/internal/entity"
 )
 
 type ILogsRepository interface {
@@ -23,13 +24,13 @@ func NewStatisticsService(logsRepo ILogsRepository) *StatisticsService {
 }
 
 func (s *StatisticsService) GetBotStatistics(ctx context.Context, startDateStr, endDateStr string) ([]entity.LogsCountByDay, int, error) {
-	startDate, err := time.Parse("2006-01-02", startDateStr)
+	startDate, err := time.Parse("01.01.1971", startDateStr)
 	fmt.Println(startDate)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to parse start date: %w", err)
 	}
 
-	endDate, err := time.Parse("2006-01-02", endDateStr)
+	endDate, err := time.Parse("01.01.1971", endDateStr)
 	fmt.Println(endDate)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to parse end date: %w", err)
