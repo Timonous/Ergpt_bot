@@ -16,6 +16,8 @@ from bot.api.ergpt import send_ergpt_message, create_ergpt_chat, delete_ergpt_ch
 from bot.auth import authorize_user
 from bot.repository.chats_repository import get_chat_for_user, set_chat_for_user, get_updateat_for_user, \
     set_updateat_for_chat, ensure_user_exists, ensure_chat_deleted, set_chat_deleted
+from bot.repository.commands_repository import get_command_id_by_code
+from bot.repository.logs_repository import save_new_log
 from bot.repository.user_repository import get_userid_by_tguser, get_all_admin_users
 markdown_symbol = get_runtime_config().markdown_symbol
 markdown_symbol.head_level_1 = ""
@@ -148,6 +150,12 @@ async def command_restart_handler(message: Message) -> None:
                 "😉Хорошо, начнем все с чистого листа\n"
                 "Задавай вопрос, я с радостью на него отвечу!"
             )
+            command_code = "RESTART_CHAT"
+            command_id = await get_command_id_by_code(command_code)
+
+            if command_id is not None:
+                await save_new_log(user_id, command_id)
+
     await message.answer(text)
 
 @router.message(DeepSeekStates.waiting_for_question, F.chat.type == ChatType.PRIVATE)
@@ -184,6 +192,12 @@ async def handle_deepseek(message: Message, bot: Bot, state: FSMContext):
     finally:
         typing_task.cancel()
         await state.clear()
+
+    command_code = "ASK_QUESTION_DS"
+    command_id = await get_command_id_by_code(command_code)
+
+    if command_id is not None:
+        await save_new_log(user_id, command_id)
 
     tg_md = markdownify(reply, max_line_length=None, normalize_whitespace=False)
     await message.reply(tg_md, parse_mode=ParseMode.MARKDOWN_V2)
@@ -237,6 +251,12 @@ async def handle_ergpt(message: Message, bot: Bot):
         return
     finally:
         typing_task.cancel()
+
+    command_code = "ASK_QUESTION_ER"
+    command_id = await get_command_id_by_code(command_code)
+
+    if command_id is not None:
+        await save_new_log(tguser_id, command_id)
 
     tg_md = markdownify(reply, max_line_length=None, normalize_whitespace=False)
     await message.reply(tg_md, parse_mode=ParseMode.MARKDOWN_V2)

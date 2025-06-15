@@ -9,11 +9,12 @@ from telegramify_markdown import markdownify
 
 from bot.auth import group_authorize_user
 from bot.handlers import limiter
+from bot.repository.commands_repository import get_command_id_by_code
 
 from bot.repository.group_chats_repository import get_chat_for_group, set_chat_for_group, get_updateat_for_group, \
     set_updateat_for_chat, ensure_group_exists, ensure_chat_deleted, set_groupt_chat_deleted
 from bot.api.ergpt import send_ergpt_message, create_ergpt_chat, delete_ergpt_chat
-
+from bot.repository.logs_repository import save_new_log
 
 router = Router()
 
@@ -59,6 +60,12 @@ async def group_restart_handler(message: Message) -> None:
                 "😉Хорошо, начнем все с чистого листа\n"
                 "Задавай вопрос, я с радостью на него отвечу!"
             )
+            command_code = "RESTART_CHAT"
+            command_id = await get_command_id_by_code(command_code)
+
+            if command_id is not None:
+                await save_new_log(message.from_user.id, command_id)
+
     await message.answer(text)
 
 @router.message(
@@ -109,6 +116,12 @@ async def group_handle_ergpt(message: Message, bot: Bot):
         return
     finally:
         typing_task.cancel()
+
+    command_code = "ASK_QUESTION_ER"
+    command_id = await get_command_id_by_code(command_code)
+
+    if command_id is not None:
+        await save_new_log(message.from_user.id, command_id)
 
     tg_md = markdownify(reply, max_line_length=None, normalize_whitespace=False)
     await message.reply(tg_md, parse_mode=ParseMode.MARKDOWN_V2)

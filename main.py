@@ -6,6 +6,8 @@ from apscheduler.triggers.cron import CronTrigger
 
 from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand, BotCommandScopeAllPrivateChats, BotCommandScopeAllGroupChats
+
+from bot.repository.commands_repository import init_default_commands
 from db import create_pool, set_db_pool
 from settings import config
 from bot.handlers import router as main_router
@@ -59,6 +61,9 @@ async def main() -> None:
     scheduler.add_job(daily_staff_status_check, CronTrigger(hour=00, minute=00))
     scheduler.add_job(daily_chats_delete, CronTrigger(hour=2, minute=00))
     scheduler.start()
+
+    #Можно удалить после перовго запуска
+    await init_default_commands()
 
     await dp.start_polling(bot)
 
