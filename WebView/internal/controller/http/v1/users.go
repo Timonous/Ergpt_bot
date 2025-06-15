@@ -11,6 +11,7 @@ import (
 
 type IUsersService interface {
 	GetUserMe(ctx context.Context, telegramID string) (*entity.User, error)
+	IsUserAuth(ctx context.Context, telegramID string) error
 }
 
 func (r *containerRoutes) GetUser(c echo.Context) error {
@@ -47,5 +48,33 @@ func (r *containerRoutes) GetUser(c echo.Context) error {
 		Email:         user.Email,
 		Phone:         user.Phone,
 		PersonalPhone: user.PersonalPhone,
+	})
+}
+
+func (r *containerRoutes) IsUserAuth(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	telegramID := c.Param("telegram_id")
+	if len(telegramID) == 0 {
+		c.JSON(http.StatusBadRequest, "telegram_id is required")
+
+		return fmt.Errorf("telegram_id is required")
+	}
+
+	err := r.t.IsUserAuth(ctx, telegramID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return c.JSON(http.StatusNotFound, entity.IsUserAuthResponse{
+				IsAuth: false,
+			})
+		}
+
+		errorResponse(c, http.StatusInternalServerError, "failed to get user")
+
+		return fmt.Errorf("failed to get user: %v", err)
+	}
+
+	return c.JSON(http.StatusOK, entity.IsUserAuthResponse{
+		IsAuth: true,
 	})
 }

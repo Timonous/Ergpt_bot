@@ -36,7 +36,6 @@ func (u *UserRepository) GetUserByTelegramID(ctx context.Context, telegramID str
 		From("users u").
 		Join("staff s ON u.staff_id = s.id").
 		Where(sq.Eq{"u.telegram_id": telegramID}).
-		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build query: %w", err)
@@ -116,4 +115,26 @@ func (u *UserRepository) GetUserByUserID(ctx context.Context, userID int) (entit
 	}
 
 	return user, nil
+}
+
+func (u *UserRepository) CheckAuthUser(ctx context.Context, telegramID string) error {
+	query, args, err := u.Builder.Select("id").
+		From("users").
+		Where(sq.Eq{"telegram_id": telegramID}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	var userID int
+	err = u.Pool.QueryRow(context.Background(), query, args...).Scan(&userID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("user not found")
+		}
+
+		return fmt.Errorf("failed to query user: %w", err)
+	}
+
+	return nil
 }

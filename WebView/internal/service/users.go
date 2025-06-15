@@ -8,6 +8,7 @@ import (
 type IUsersRepository interface {
 	GetUserByTelegramID(ctx context.Context, telegramID string) (*entity.User, error)
 	GetUserByUserID(ctx context.Context, userID int) (entity.User, error)
+	CheckAuthUser(ctx context.Context, telegramID string) error
 }
 
 type UserService struct {
@@ -20,4 +21,8 @@ func NewUserService(userRepo IUsersRepository) *UserService {
 
 func (s *UserService) GetUserMe(ctx context.Context, telegramID string) (*entity.User, error) {
 	return s.userRepo.GetUserByTelegramID(ctx, telegramID)
+}
+
+func (s *UserService) IsUserAuth(ctx context.Context, telegramID string) error {
+	return s.userRepo.CheckAuthUser(ctx, telegramID)
 }

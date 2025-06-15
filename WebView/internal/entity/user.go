@@ -27,3 +27,7 @@ type UserResponse struct {
 	Phone         string `json:"workPhone"`
 	PersonalPhone string `json:"personalPhone"`
 }
+
+type IsUserAuthResponse struct {
+	IsAuth bool `json:"is_auth"`
+}

@@ -20,6 +20,9 @@ func newUserRoutes(handler *echo.Group, t IUsersService, n INewsService, s IStat
 	// GET /api/v1/users/{telegramID}
 	handler.GET("/users/:telegram_id", r.GetUser)
 
+	// GET /api/v1/users/auth/{telegramID}
+	handler.GET("/users/auth/:telegram_id", r.IsUserAuth)
+
 	// GET /api/v1/news?limit=5&offset=0
 	handler.GET("/news", r.GetNews)
 
